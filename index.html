@@ -95,7 +95,17 @@
             letter-spacing: 0.5px;
         }
 
-        /* Permission Modal */
+        .input-area {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--text);
+            border-radius: var(--btn-radius);
+            font-size: 16px;
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -164,7 +174,6 @@
             display: none;
         }
 
-        /* RTL support */
         [dir="rtl"] .btn-text {
             letter-spacing: 0;
         }
@@ -173,6 +182,7 @@
 
 <body>
     <div class="keyboard-container">
+        <textarea class="input-area" id="inputArea" placeholder="Generated email will appear here..."></textarea>
         <button class="generate-btn" id="generateBtn" style="display: none;">
             <div class="icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -184,7 +194,6 @@
         </button>
     </div>
 
-    <!-- Permission Modal -->
     <div class="modal-overlay" id="permissionModal">
         <div class="modal-content">
             <div class="modal-title" id="modalTitle">Enable Keyboard</div>
@@ -211,6 +220,7 @@
             const warningMessage = document.getElementById('warningMessage');
             const modalTitle = document.getElementById('modalTitle');
             const modalText = document.getElementById('modalText');
+            const inputArea = document.getElementById('inputArea');
 
             // Language detection
             const isArabic = navigator.language.startsWith('ar');
@@ -222,6 +232,7 @@
                 cancelBtn.textContent = 'إلغاء';
                 confirmBtn.textContent = 'تفعيل';
                 warningMessage.textContent = 'يجب تفعيل لوحة المفاتيح لمواصلة استخدام هذا التطبيق.';
+                inputArea.placeholder = 'سيظهر البريد الإلكتروني المولد هنا...';
             }
 
             // Check if keyboard is enabled (simulated)
@@ -232,7 +243,6 @@
 
             // Confirm button click
             confirmBtn.addEventListener('click', function () {
-                // In a real app, this would open keyboard settings
                 alert(isArabic ?
                     'سيتم فتح إعدادات لوحة المفاتيح. يرجى تفعيل "Email Keyboard" وتعيينها كلوحة افتراضية.' :
                     'Keyboard settings will open. Please enable "Email Keyboard" and set it as default.');
@@ -246,8 +256,6 @@
             // Cancel button click
             cancelBtn.addEventListener('click', function () {
                 warningMessage.style.display = 'block';
-
-                // Hide warning after 3 seconds
                 setTimeout(() => {
                     warningMessage.style.display = 'none';
                 }, 3000);
@@ -267,6 +275,16 @@
                 return `${randomName}.${randomLastName}${randomNum}@${randomDomain}`;
             }
 
+            // Copy to clipboard
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert(isArabic ? 'تم نسخ البريد إلى الحافظة!' : 'Email copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    alert(isArabic ? 'فشل في النسخ إلى الحافظة' : 'Failed to copy to clipboard');
+                });
+            }
+
             // Button click handler
             generateBtn.addEventListener('click', function () {
                 if (!keyboardEnabled) {
@@ -277,14 +295,17 @@
                 // Generate email
                 const email = generateEmail();
 
+                // Update textarea
+                inputArea.value = email;
+
+                // Copy to clipboard
+                copyToClipboard(email);
+
                 // Visual feedback
                 btnText.textContent = isArabic ? 'تم التوليد!' : 'Generated!';
 
-                // In a real keyboard app, this would insert the text directly
+                // In a real keyboard app, this would insert the text directly into the active text field
                 console.log('Email would be inserted:', email);
-                alert(isArabic ?
-                    'تم توليد البريد: ' + email + '\n(في التطبيق الفعلي سيتم إدراجه مباشرة)' :
-                    'Generated email: ' + email + '\n(In real app it would be inserted directly)');
 
                 // Reset button after 1 second
                 setTimeout(() => {
