@@ -1,18 +1,34 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="auto">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>كيبورد البريد الإلكتروني</title>
+    <title>Email Keyboard</title>
     <style>
         :root {
             --primary: #007AFF;
             --primary-dark: #0062CC;
+            --primary-light: #E6F2FF;
             --danger: #FF3B30;
             --text: #1C1C1E;
             --bg: #F2F2F7;
             --card-radius: 16px;
             --btn-radius: 12px;
+        }
+
+        .dark-mode {
+            --primary: #0A84FF;
+            --primary-dark: #0062CC;
+            --primary-light: #003366;
+            --danger: #FF453A;
+            --text: #FFFFFF;
+            --bg: #1C1C1E;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -28,58 +44,11 @@
             touch-action: manipulation;
         }
 
-        .container {
+        .keyboard-container {
             width: 100%;
             max-width: 500px;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
-        }
-
-        .permission-card {
-            background-color: white;
-            border-radius: var(--card-radius);
-            padding: 25px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: var(--primary);
-            margin-bottom: 20px;
-        }
-
-        p {
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 25px;
-            border-radius: var(--btn-radius);
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-            margin: 0 10px;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-        }
-
-        .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--primary);
-            color: var(--primary);
-        }
-
-        .keyboard-screen {
-            display: none;
         }
 
         .generate-btn {
@@ -100,92 +69,235 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 6px 15px rgba(0, 122, 255, 0.3);
-            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .generate-btn:active {
+            background-color: var(--primary-dark);
+            transform: scale(0.98);
+        }
+
+        .icon {
+            width: 36px;
+            height: 36px;
+            background-color: var(--primary-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .btn-text {
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Permission Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: var(--bg);
+            border-radius: var(--card-radius);
+            padding: 25px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .modal-text {
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: var(--btn-radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .primary-btn {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .secondary-btn {
+            background-color: transparent;
+            border: 1px solid var(--text);
+            color: var(--text);
+        }
+
+        .warning-message {
+            color: var(--danger);
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* RTL support */
+        [dir="rtl"] .btn-text {
+            letter-spacing: 0;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div id="permissionScreen" class="permission-card">
-            <h1>تفعيل لوحة المفاتيح</h1>
-            <p>لاستخدام كيبورد البريد الإلكتروني، يرجى تفعيله في إعدادات الجهاز وتعيينه كلوحة مفاتيح افتراضية</p>
-            
-            <button id="enableBtn" class="btn btn-primary">تفعيل الكيبورد</button>
-            <button id="cancelBtn" class="btn btn-outline">لاحقاً</button>
-        </div>
 
-        <div id="keyboardScreen" class="keyboard-screen">
-            <button id="generateBtn" class="generate-btn">
-                <span>توليد بريد إلكتروني</span>
-            </button>
+<body>
+    <div class="keyboard-container">
+        <button class="generate-btn" id="generateBtn" style="display: none;">
+            <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+            </div>
+            <span class="btn-text" id="btnText">Generate Email</span>
+        </button>
+    </div>
+
+    <!-- Permission Modal -->
+    <div class="modal-overlay" id="permissionModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">Enable Keyboard</div>
+            <div class="modal-text" id="modalText">
+                To use this keyboard, you need to enable it in your device settings and set it as your default keyboard.
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary-btn" id="cancelBtn">Cancel</button>
+                <button class="modal-btn primary-btn" id="confirmBtn">Enable</button>
+            </div>
+            <div class="warning-message" id="warningMessage">
+                You must enable the keyboard to continue using this app.
+            </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const permissionScreen = document.getElementById('permissionScreen');
-            const keyboardScreen = document.getElementById('keyboardScreen');
-            const enableBtn = document.getElementById('enableBtn');
-            const cancelBtn = document.getElementById('cancelBtn');
+        document.addEventListener('DOMContentLoaded', function () {
             const generateBtn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('btnText');
+            const permissionModal = document.getElementById('permissionModal');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const confirmBtn = document.getElementById('confirmBtn');
+            const warningMessage = document.getElementById('warningMessage');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalText = document.getElementById('modalText');
 
-            // محاكاة حالة تفعيل الكيبورد
-            let keyboardEnabled = localStorage.getItem('keyboardEnabled') === 'true';
-
-            // عند تحميل الصفحة، تحقق إذا كان الكيبورد مفعل
-            checkKeyboardStatus();
-
-            function checkKeyboardStatus() {
-                if (keyboardEnabled) {
-                    permissionScreen.style.display = 'none';
-                    keyboardScreen.style.display = 'block';
-                } else {
-                    permissionScreen.style.display = 'block';
-                    keyboardScreen.style.display = 'none';
-                }
+            // Language detection
+            const isArabic = navigator.language.startsWith('ar');
+            if (isArabic) {
+                document.documentElement.dir = 'rtl';
+                btnText.textContent = 'توليد بريد إلكتروني';
+                modalTitle.textContent = 'تفعيل لوحة المفاتيح';
+                modalText.textContent = 'لاستخدام هذه اللوحة، يرجى تفعيلها في إعدادات الجهاز وتعيينها كلوحة مفاتيح افتراضية.';
+                cancelBtn.textContent = 'إلغاء';
+                confirmBtn.textContent = 'تفعيل';
+                warningMessage.textContent = 'يجب تفعيل لوحة المفاتيح لمواصلة استخدام هذا التطبيق.';
             }
 
-            // زر التفعيل
-            enableBtn.addEventListener('click', function() {
-                // في التطبيق الحقيقي، هذا سيفتح إعدادات الكيبورد
-                alert('سيتم فتح إعدادات لوحة المفاتيح. يرجى تفعيل "كيبورد البريد" وتعيينه كلوحة افتراضية.');
-                
-                // محاكاة نجاح التفعيل
-                localStorage.setItem('keyboardEnabled', 'true');
+            // Check if keyboard is enabled (simulated)
+            let keyboardEnabled = false;
+
+            // Show permission modal on load
+            permissionModal.style.display = 'flex';
+
+            // Confirm button click
+            confirmBtn.addEventListener('click', function () {
+                // In a real app, this would open keyboard settings
+                alert(isArabic ?
+                    'سيتم فتح إعدادات لوحة المفاتيح. يرجى تفعيل "Email Keyboard" وتعيينها كلوحة افتراضية.' :
+                    'Keyboard settings will open. Please enable "Email Keyboard" and set it as default.');
+
+                // Simulate enabling keyboard
                 keyboardEnabled = true;
-                checkKeyboardStatus();
+                permissionModal.style.display = 'none';
+                generateBtn.style.display = 'flex';
             });
 
-            // زر إلغاء
-            cancelBtn.addEventListener('click', function() {
-                alert('لا يمكنك استخدام التطبيق بدون تفعيل لوحة المفاتيح');
+            // Cancel button click
+            cancelBtn.addEventListener('click', function () {
+                warningMessage.style.display = 'block';
+
+                // Hide warning after 3 seconds
+                setTimeout(() => {
+                    warningMessage.style.display = 'none';
+                }, 3000);
             });
 
-            // زر توليد البريد
-            generateBtn.addEventListener('click', function() {
+            // Generate random email
+            function generateEmail() {
+                const firstNames = ['john', 'jane', 'mike', 'sarah', 'david', 'emma', 'alex', 'lisa'];
+                const lastNames = ['smith', 'johnson', 'williams', 'brown', 'jones', 'miller'];
+                const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
+
+                const randomName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                const randomLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+                const randomNum = Math.floor(Math.random() * 1000);
+                const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+
+                return `${randomName}.${randomLastName}${randomNum}@${randomDomain}`;
+            }
+
+            // Button click handler
+            generateBtn.addEventListener('click', function () {
                 if (!keyboardEnabled) {
-                    alert('يجب تفعيل لوحة المفاتيح أولاً');
+                    permissionModal.style.display = 'flex';
                     return;
                 }
 
-                const email = generateRandomEmail();
-                alert('تم توليد البريد: ' + email + '\n(في التطبيق الحقيقي سيتم إدراجه مباشرة في حقل النص)');
+                // Generate email
+                const email = generateEmail();
+
+                // Visual feedback
+                btnText.textContent = isArabic ? 'تم التوليد!' : 'Generated!';
+
+                // In a real keyboard app, this would insert the text directly
+                console.log('Email would be inserted:', email);
+                alert(isArabic ?
+                    'تم توليد البريد: ' + email + '\n(في التطبيق الفعلي سيتم إدراجه مباشرة)' :
+                    'Generated email: ' + email + '\n(In real app it would be inserted directly)');
+
+                // Reset button after 1 second
+                setTimeout(() => {
+                    btnText.textContent = isArabic ? 'توليد بريد إلكتروني' : 'Generate Email';
+                }, 1000);
             });
 
-            // دالة توليد البريد العشوائي
-            function generateRandomEmail() {
-                const firstNames = ['محمد', 'أحمد', 'علي', 'يوسف', 'مريم', 'فاطمة', 'زينب', 'خالد'];
-                const lastNames = ['علي', 'حسن', 'محمود', 'عبدالله', 'الزهراء', 'إبراهيم', 'مصطفى', 'عمر'];
-                const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
-                
-                const name = firstNames[Math.floor(Math.random() * firstNames.length)];
-                const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-                const num = Math.floor(Math.random() * 1000);
-                const domain = domains[Math.floor(Math.random() * domains.length)];
-                
-                return `${name}.${lastName}${num}@${domain}`;
+            // Dark mode detection
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark-mode');
             }
         });
     </script>
 </body>
+
 </html>
