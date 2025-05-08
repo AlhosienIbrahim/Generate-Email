@@ -1,324 +1,179 @@
 <!DOCTYPE html>
-<html lang="auto">
+   <html lang="auto">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Email Keyboard</title>
-    <style>
-        :root {
-            --primary: #007AFF;
-            --primary-dark: #0062CC;
-            --primary-light: #E6F2FF;
-            --danger: #FF3B30;
-            --text: #1C1C1E;
-            --bg: #F2F2F7;
-            --card-radius: 16px;
-            --btn-radius: 12px;
-        }
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+       <title>Email Keyboard</title>
+       <style>
+           :root {
+               --primary: #007AFF;
+               --primary-dark: #0062CC;
+               --primary-light: #E6F2FF;
+               --text: #1C1C1E;
+               --bg: #F2F2F7;
+               --card-radius: 16px;
+           }
 
-        .dark-mode {
-            --primary: #0A84FF;
-            --primary-dark: #0062CC;
-            --primary-light: #003366;
-            --danger: #FF453A;
-            --text: #FFFFFF;
-            --bg: #1C1C1E;
-        }
+           .dark-mode {
+               --primary: #0A84FF;
+               --primary-dark: #0062CC;
+               --primary-light: #003366;
+               --text: #FFFFFF;
+               --bg: #1C1C1E;
+           }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+           * {
+               box-sizing: border-box;
+               -webkit-tap-highlight-color: transparent;
+           }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            touch-action: manipulation;
-        }
+           body {
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+               margin: 0;
+               padding: 0;
+               background-color: var(--bg);
+               color: var(--text);
+               min-height: 100vh;
+               display: flex;
+               justify-content: center;
+               align-items: center;
+               touch-action: manipulation;
+           }
 
-        .keyboard-container {
-            width: 100%;
-            max-width: 500px;
-            padding: 15px;
-            text-align: center;
-        }
+           .keyboard-container {
+               width: 100%;
+               max-width: 500px;
+               padding: 15px;
+               text-align: center;
+           }
 
-        .generate-btn {
-            width: 100%;
-            height: 120px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--card-radius);
-            font-size: 22px;
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 6px 15px rgba(0, 122, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
+           .generate-btn {
+               width: 100%;
+               height: 120px;
+               background-color: var(--primary);
+               color: white;
+               border: none;
+               border-radius: var(--card-radius);
+               font-size: 22px;
+               font-weight: 600;
+               display: flex;
+               flex-direction: column;
+               align-items: center;
+               justify-content: center;
+               gap: 10px;
+               padding: 20px;
+               cursor: pointer;
+               transition: all 0.2s;
+               box-shadow: 0 6px 15px rgba(0, 122, 255, 0.3);
+               position: relative;
+               overflow: hidden;
+           }
 
-        .generate-btn:active {
-            background-color: var(--primary-dark);
-            transform: scale(0.98);
-        }
+           .generate-btn:active {
+               background-color: var(--primary-dark);
+               transform: scale(0.98);
+           }
 
-        .icon {
-            width: 36px;
-            height: 36px;
-            background-color: var(--primary-light);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px;
-        }
+           .icon {
+               width: 36px;
+               height: 36px;
+               background-color: var(--primary-light);
+               border-radius: 50%;
+               display: flex;
+               align-items: center;
+               justify-content: center;
+               padding: 8px;
+           }
 
-        .btn-text {
-            font-size: 18px;
-            letter-spacing: 0.5px;
-        }
+           .btn-text {
+               font-size: 18px;
+               letter-spacing: 0.5px;
+           }
 
-        .input-area {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid var(--text);
-            border-radius: var(--btn-radius);
-            font-size: 16px;
-            background-color: var(--bg);
-            color: var(--text);
-        }
+           [dir="rtl"] .btn-text {
+               letter-spacing: 0;
+           }
+       </style>
+   </head>
 
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-        }
+   <body>
+       <div class="keyboard-container">
+           <button class="generate-btn" id="generateBtn">
+               <div class="icon">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                       <polyline points="22,6 12,13 2,6"></polyline>
+                   </svg>
+               </div>
+               <span class="btn-text" id="btnText">Generate Email</span>
+           </button>
+       </div>
 
-        .modal-content {
-            background-color: var(--bg);
-            border-radius: var(--card-radius);
-            padding: 25px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
+       <script>
+           document.addEventListener('DOMContentLoaded', function () {
+               const generateBtn = document.getElementById('generateBtn');
+               const btnText = document.getElementById('btnText');
 
-        .modal-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
+               // Language detection
+               const isArabic = navigator.language.startsWith('ar');
+               if (isArabic) {
+                   document.documentElement.dir = 'rtl';
+                   btnText.textContent = 'توليد بريد إلكتروني';
+               }
 
-        .modal-text {
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
+               // Generate random email
+               function generateEmail() {
+                   const firstNames = ['john', 'jane', 'mike', 'sarah', 'david', 'emma', 'alex', 'lisa'];
+                   const lastNames = ['smith', 'johnson', 'williams', 'brown', 'jones', 'miller'];
+                   const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
 
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-        }
+                   const randomName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                   const randomLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+                   const randomNum = Math.floor(Math.random() * 1000);
+                   const randomDomain = domains[Math.floor(Math.random() * domains.length)];
 
-        .modal-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: var(--btn-radius);
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
+                   return `${randomName}.${randomLastName}${randomNum}@${randomDomain}`;
+               }
 
-        .primary-btn {
-            background-color: var(--primary);
-            color: white;
-        }
+               // Copy to clipboard silently
+               function copyToClipboard(text) {
+                   if (window.median && window.median.clipboard) {
+                       window.median.clipboard.set(text);
+                   } else if (navigator.clipboard) {
+                       navigator.clipboard.writeText(text).catch(err => {
+                           console.error('Failed to copy:', err);
+                       });
+                   }
+               }
 
-        .secondary-btn {
-            background-color: transparent;
-            border: 1px solid var(--text);
-            color: var(--text);
-        }
+               // Insert text (placeholder for Median JavaScript Bridge)
+               function insertText(text) {
+                   if (window.median && window.median.keyboard) {
+                       // Hypothetical Median keyboard API
+                       window.median.keyboard.insertText(text, () => {
+                           console.log('Text inserted');
+                       }, (err) => {
+                           console.error('Insert failed:', err);
+                       });
+                   } else {
+                       console.log('No keyboard API available, email copied:', text);
+                   }
+               }
 
-        .warning-message {
-            color: var(--danger);
-            margin-top: 15px;
-            font-size: 14px;
-            display: none;
-        }
+               // Button click handler
+               generateBtn.addEventListener('click', function () {
+                   const email = generateEmail();
+                   copyToClipboard(email);
+                   insertText(email);
+               });
 
-        [dir="rtl"] .btn-text {
-            letter-spacing: 0;
-        }
-    </style>
-</head>
+               // Dark mode detection
+               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                   document.body.classList.add('dark-mode');
+               }
+           });
+       </script>
+   </body>
 
-<body>
-    <div class="keyboard-container">
-        <textarea class="input-area" id="inputArea" placeholder="Generated email will appear here..."></textarea>
-        <button class="generate-btn" id="generateBtn" style="display: none;">
-            <div class="icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                </svg>
-            </div>
-            <span class="btn-text" id="btnText">Generate Email</span>
-        </button>
-    </div>
-
-    <div class="modal-overlay" id="permissionModal">
-        <div class="modal-content">
-            <div class="modal-title" id="modalTitle">Enable Keyboard</div>
-            <div class="modal-text" id="modalText">
-                To use this keyboard, you need to enable it in your device settings and set it as your default keyboard.
-            </div>
-            <div class="modal-buttons">
-                <button class="modal-btn secondary-btn" id="cancelBtn">Cancel</button>
-                <button class="modal-btn primary-btn" id="confirmBtn">Enable</button>
-            </div>
-            <div class="warning-message" id="warningMessage">
-                You must enable the keyboard to continue using this app.
-            </div>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const generateBtn = document.getElementById('generateBtn');
-            const btnText = document.getElementById('btnText');
-            const permissionModal = document.getElementById('permissionModal');
-            const cancelBtn = document.getElementById('cancelBtn');
-            const confirmBtn = document.getElementById('confirmBtn');
-            const warningMessage = document.getElementById('warningMessage');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalText = document.getElementById('modalText');
-            const inputArea = document.getElementById('inputArea');
-
-            // Language detection
-            const isArabic = navigator.language.startsWith('ar');
-            if (isArabic) {
-                document.documentElement.dir = 'rtl';
-                btnText.textContent = 'توليد بريد إلكتروني';
-                modalTitle.textContent = 'تفعيل لوحة المفاتيح';
-                modalText.textContent = 'لاستخدام هذه اللوحة، يرجى تفعيلها في إعدادات الجهاز وتعيينها كلوحة مفاتيح افتراضية.';
-                cancelBtn.textContent = 'إلغاء';
-                confirmBtn.textContent = 'تفعيل';
-                warningMessage.textContent = 'يجب تفعيل لوحة المفاتيح لمواصلة استخدام هذا التطبيق.';
-                inputArea.placeholder = 'سيظهر البريد الإلكتروني المولد هنا...';
-            }
-
-            // Check if keyboard is enabled (simulated)
-            let keyboardEnabled = false;
-
-            // Show permission modal on load
-            permissionModal.style.display = 'flex';
-
-            // Confirm button click
-            confirmBtn.addEventListener('click', function () {
-                alert(isArabic ?
-                    'سيتم فتح إعدادات لوحة المفاتيح. يرجى تفعيل "Email Keyboard" وتعيينها كلوحة افتراضية.' :
-                    'Keyboard settings will open. Please enable "Email Keyboard" and set it as default.');
-
-                // Simulate enabling keyboard
-                keyboardEnabled = true;
-                permissionModal.style.display = 'none';
-                generateBtn.style.display = 'flex';
-            });
-
-            // Cancel button click
-            cancelBtn.addEventListener('click', function () {
-                warningMessage.style.display = 'block';
-                setTimeout(() => {
-                    warningMessage.style.display = 'none';
-                }, 3000);
-            });
-
-            // Generate random email
-            function generateEmail() {
-                const firstNames = ['john', 'jane', 'mike', 'sarah', 'david', 'emma', 'alex', 'lisa'];
-                const lastNames = ['smith', 'johnson', 'williams', 'brown', 'jones', 'miller'];
-                const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
-
-                const randomName = firstNames[Math.floor(Math.random() * firstNames.length)];
-                const randomLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-                const randomNum = Math.floor(Math.random() * 1000);
-                const randomDomain = domains[Math.floor(Math.random() * domains.length)];
-
-                return `${randomName}.${randomLastName}${randomNum}@${randomDomain}`;
-            }
-
-            // Copy to clipboard
-            function copyToClipboard(text) {
-                navigator.clipboard.writeText(text).then(() => {
-                    alert(isArabic ? 'تم نسخ البريد إلى الحافظة!' : 'Email copied to clipboard!');
-                }).catch(err => {
-                    console.error('Failed to copy:', err);
-                    alert(isArabic ? 'فشل في النسخ إلى الحافظة' : 'Failed to copy to clipboard');
-                });
-            }
-
-            // Button click handler
-            generateBtn.addEventListener('click', function () {
-                if (!keyboardEnabled) {
-                    permissionModal.style.display = 'flex';
-                    return;
-                }
-
-                // Generate email
-                const email = generateEmail();
-
-                // Update textarea
-                inputArea.value = email;
-
-                // Copy to clipboard
-                copyToClipboard(email);
-
-                // Visual feedback
-                btnText.textContent = isArabic ? 'تم التوليد!' : 'Generated!';
-
-                // In a real keyboard app, this would insert the text directly into the active text field
-                console.log('Email would be inserted:', email);
-
-                // Reset button after 1 second
-                setTimeout(() => {
-                    btnText.textContent = isArabic ? 'توليد بريد إلكتروني' : 'Generate Email';
-                }, 1000);
-            });
-
-            // Dark mode detection
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.body.classList.add('dark-mode');
-            }
-        });
-    </script>
-</body>
-
-</html>
+   </html>
