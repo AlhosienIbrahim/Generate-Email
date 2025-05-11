@@ -23,6 +23,8 @@
             --special-key-bg: #CFD4DE;
             --transition-duration: 0.1s;
             --font-size-base: 16px;
+            --key-active-scale: 0.92;
+            --long-press-delay: 400;
         }
 
         .dark-mode {
@@ -72,6 +74,7 @@
             position: sticky;
             bottom: 0;
             z-index: 10;
+            touch-action: manipulation;
         }
 
         .keyboard-row {
@@ -80,6 +83,7 @@
             gap: var(--key-gap);
             margin-bottom: var(--key-gap);
             direction: ltr;
+            touch-action: manipulation;
         }
 
         .key {
@@ -104,11 +108,12 @@
             outline: none;
             direction: ltr;
             touch-action: manipulation;
+            will-change: transform, background-color;
         }
 
         .key:active {
             background-color: var(--primary-light);
-            transform: scale(0.95);
+            transform: scale(var(--key-active-scale));
         }
 
         .key.special {
@@ -160,6 +165,7 @@
             z-index: 100;
             border: none;
             outline: none;
+            touch-action: manipulation;
         }
 
         .special-buttons-row .key {
@@ -180,7 +186,7 @@
 
         @keyframes keyPress {
             0% { transform: scale(1); }
-            50% { transform: scale(0.95); }
+            50% { transform: scale(var(--key-active-scale)); }
             100% { transform: scale(1); }
         }
 
@@ -204,11 +210,49 @@
             color: var(--text);
             box-sizing: border-box;
             resize: none;
+            touch-action: manipulation;
         }
 
         .backspace-active {
             background-color: var(--primary-light) !important;
-            transform: scale(0.95);
+            transform: scale(var(--key-active-scale)) !important;
+        }
+
+        .key-preview {
+            position: absolute;
+            bottom: calc(var(--key-height) + 10px);
+            background-color: var(--key-bg);
+            color: var(--key-text);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 24px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.1s, transform 0.1s;
+            pointer-events: none;
+        }
+
+        .key-preview.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .key-long-press {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--key-bg);
+            color: var(--key-text);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+            white-space: nowrap;
+            pointer-events: none;
         }
 
         @media (max-width: 600px) {
@@ -390,6 +434,8 @@
         </div>
     </div>
 
+    <div class="key-preview" id="keyPreview"></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const keyboard = {
@@ -401,6 +447,19 @@
                 backspaceSpeed: 50,
                 pressedKeys: new Set(),
                 lastBackspaceTime: 0,
+                activeKey: null,
+                keyPreview: document.getElementById('keyPreview'),
+                longPressTimer: null,
+                longPressDelay: 400,
+                touchStartX: 0,
+                touchStartY: 0,
+                touchMoveThreshold: 10,
+                isTouchDevice: 'ontouchstart' in window,
+                isDragging: false,
+                isKeyPressed: false,
+                keyPressStartTime: 0,
+                currentKey: null,
+                keyPressPosition: { x: 0, y: 0 },
 
                 init() {
                     this.setLanguage(navigator.language.startsWith('ar') ? 'ar' : 'en');
@@ -422,20 +481,16 @@
                 },
 
                 setupEventListeners() {
-                    // Handle pointer events (mouse and touch)
-                    document.addEventListener('pointerdown', (e) => {
-                        const key = e.target.closest('.key');
-                        if (!key) return;
-                        
-                        this.animateKey(key);
-                        this.handleKeyAction(key);
-                        
-                        if (key.id === 'backspaceKey') {
-                            this.startContinuousBackspace();
-                            document.addEventListener('pointerup', this.stopBackspaceHandler);
-                            document.addEventListener('pointercancel', this.stopBackspaceHandler);
-                        }
-                    });
+                    // Handle touch events with better touch handling
+                    document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+                    document.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+                    document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+                    document.addEventListener('touchcancel', this.handleTouchEnd.bind(this));
+
+                    // Handle mouse events
+                    document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+                    document.addEventListener('mouseleave', this.handleMouseUp.bind(this));
 
                     // Keyboard events
                     document.addEventListener('keydown', (e) => {
@@ -472,9 +527,174 @@
                             this.inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 300);
                     });
+                },
 
-                    // Store bound function for event listener removal
-                    this.stopBackspaceHandler = () => this.stopContinuousBackspace();
+                handleTouchStart(e) {
+                    if (e.target.closest('#testInput')) return;
+                    
+                    const touch = e.touches[0];
+                    this.touchStartX = touch.clientX;
+                    this.touchStartY = touch.clientY;
+                    this.isDragging = false;
+                    
+                    const key = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.key');
+                    if (!key) return;
+                    
+                    e.preventDefault();
+                    this.handleKeyPressStart(key, touch.clientX, touch.clientY);
+                },
+
+                handleTouchMove(e) {
+                    if (!this.isKeyPressed) return;
+                    
+                    const touch = e.touches[0];
+                    const dx = Math.abs(touch.clientX - this.touchStartX);
+                    const dy = Math.abs(touch.clientY - this.touchStartY);
+                    
+                    if (dx > this.touchMoveThreshold || dy > this.touchMoveThreshold) {
+                        this.isDragging = true;
+                        this.clearLongPressTimer();
+                        this.hideKeyPreview();
+                        
+                        const key = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.key');
+                        if (key && key !== this.currentKey) {
+                            this.handleKeyChange(key);
+                        }
+                    }
+                    
+                    e.preventDefault();
+                },
+
+                handleTouchEnd(e) {
+                    if (!this.isKeyPressed) return;
+                    
+                    const touch = e.changedTouches[0];
+                    const key = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.key');
+                    
+                    if (!this.isDragging && key === this.currentKey && Date.now() - this.keyPressStartTime < this.longPressDelay) {
+                        this.handleKeyAction(key);
+                    }
+                    
+                    this.handleKeyPressEnd();
+                    e.preventDefault();
+                },
+
+                handleMouseDown(e) {
+                    if (e.target.closest('#testInput')) return;
+                    
+                    const key = e.target.closest('.key');
+                    if (!key) return;
+                    
+                    this.handleKeyPressStart(key, e.clientX, e.clientY);
+                },
+
+                handleMouseUp(e) {
+                    if (!this.isKeyPressed) return;
+                    
+                    const key = e.target.closest('.key');
+                    
+                    if (!this.isDragging && key === this.currentKey && Date.now() - this.keyPressStartTime < this.longPressDelay) {
+                        this.handleKeyAction(key);
+                    }
+                    
+                    this.handleKeyPressEnd();
+                },
+
+                handleKeyPressStart(key, x, y) {
+                    this.isKeyPressed = true;
+                    this.currentKey = key;
+                    this.keyPressStartTime = Date.now();
+                    this.keyPressPosition = { x, y };
+                    
+                    this.animateKey(key);
+                    this.showKeyPreview(key, x, y);
+                    
+                    // Start long press timer for special keys
+                    if (['backspaceKey', 'spaceKey', 'shiftKey', 'langKey'].includes(key.id)) {
+                        this.longPressTimer = setTimeout(() => {
+                            this.handleLongPress(key);
+                        }, this.longPressDelay);
+                    }
+                },
+
+                handleKeyPressEnd() {
+                    this.isKeyPressed = false;
+                    this.isDragging = false;
+                    this.clearLongPressTimer();
+                    this.hideKeyPreview();
+                    
+                    if (this.currentKey?.id === 'backspaceKey') {
+                        this.stopContinuousBackspace();
+                    }
+                    
+                    this.currentKey = null;
+                },
+
+                handleKeyChange(newKey) {
+                    if (this.currentKey === newKey) return;
+                    
+                    // End previous key press
+                    if (this.currentKey) {
+                        this.currentKey.classList.remove('active');
+                    }
+                    
+                    // Start new key press
+                    this.currentKey = newKey;
+                    this.keyPressStartTime = Date.now();
+                    this.animateKey(newKey);
+                    this.showKeyPreview(newKey, this.keyPressPosition.x, this.keyPressPosition.y);
+                    
+                    // Restart long press timer if needed
+                    this.clearLongPressTimer();
+                    if (['backspaceKey', 'spaceKey', 'shiftKey', 'langKey'].includes(newKey.id)) {
+                        this.longPressTimer = setTimeout(() => {
+                            this.handleLongPress(newKey);
+                        }, this.longPressDelay);
+                    }
+                },
+
+                handleLongPress(key) {
+                    switch (key.id) {
+                        case 'backspaceKey':
+                            this.startContinuousBackspace();
+                            break;
+                        case 'spaceKey':
+                            this.insertText(' ');
+                            break;
+                        case 'shiftKey':
+                            this.toggleShift();
+                            break;
+                        case 'langKey':
+                            this.toggleLanguage();
+                            break;
+                    }
+                },
+
+                clearLongPressTimer() {
+                    if (this.longPressTimer) {
+                        clearTimeout(this.longPressTimer);
+                        this.longPressTimer = null;
+                    }
+                },
+
+                showKeyPreview(key, x, y) {
+                    if (!key.dataset.char || this.isDragging) {
+                        this.hideKeyPreview();
+                        return;
+                    }
+                    
+                    const char = this.currentLanguage === 'ar'
+                        ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
+                        : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
+                    
+                    this.keyPreview.textContent = char;
+                    this.keyPreview.style.left = `${x - 15}px`;
+                    this.keyPreview.style.bottom = `${window.innerHeight - y + 30}px`;
+                    this.keyPreview.classList.add('visible');
+                },
+
+                hideKeyPreview() {
+                    this.keyPreview.classList.remove('visible');
                 },
 
                 animateKey(key) {
@@ -511,10 +731,19 @@
 
                 insertText(text) {
                     const start = this.inputField.selectionStart;
-                    this.inputField.value = this.inputField.value.substring(0, start) + text + 
-                                            this.inputField.value.substring(this.inputField.selectionEnd);
-                    this.inputField.selectionStart = this.inputField.selectionEnd = start + text.length;
-                    this.inputField.focus();
+                    const end = this.inputField.selectionEnd;
+                    
+                    // Use document.execCommand for better undo/redo support
+                    if (document.execCommand && !this.isTouchDevice) {
+                        this.inputField.focus();
+                        document.execCommand('insertText', false, text);
+                    } else {
+                        // Fallback for mobile browsers
+                        this.inputField.value = this.inputField.value.substring(0, start) + text + 
+                                              this.inputField.value.substring(end);
+                        this.inputField.selectionStart = this.inputField.selectionEnd = start + text.length;
+                        this.inputField.focus();
+                    }
                 },
 
                 handleBackspacePress() {
@@ -543,9 +772,6 @@
                     clearTimeout(this.backspaceInterval);
                     clearInterval(this.backspaceInterval);
                     this.backspaceInterval = null;
-                    
-                    document.removeEventListener('pointerup', this.stopBackspaceHandler);
-                    document.removeEventListener('pointercancel', this.stopBackspaceHandler);
                 },
 
                 backspace() {
@@ -554,16 +780,23 @@
                     
                     if (start === 0 && start === end) return false;
 
-                    if (start === end) {
-                        this.inputField.value = this.inputField.value.substring(0, start - 1) + 
-                                              this.inputField.value.substring(start);
-                        this.inputField.selectionStart = this.inputField.selectionEnd = start - 1;
+                    // Use document.execCommand for better undo/redo support
+                    if (document.execCommand && !this.isTouchDevice) {
+                        this.inputField.focus();
+                        document.execCommand('delete', false);
                     } else {
-                        this.inputField.value = this.inputField.value.substring(0, start) + 
-                                              this.inputField.value.substring(end);
-                        this.inputField.selectionStart = this.inputField.selectionEnd = start;
+                        // Fallback for mobile browsers
+                        if (start === end) {
+                            this.inputField.value = this.inputField.value.substring(0, start - 1) + 
+                                                this.inputField.value.substring(start);
+                            this.inputField.selectionStart = this.inputField.selectionEnd = start - 1;
+                        } else {
+                            this.inputField.value = this.inputField.value.substring(0, start) + 
+                                                this.inputField.value.substring(end);
+                            this.inputField.selectionStart = this.inputField.selectionEnd = start;
+                        }
+                        this.inputField.focus();
                     }
-                    this.inputField.focus();
                     return true;
                 },
 
