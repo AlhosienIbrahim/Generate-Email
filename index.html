@@ -1,179 +1,651 @@
 <!DOCTYPE html>
-   <html lang="auto">
+<html lang="auto" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enhanced Smart Keyboard</title>
+    <style>
+        :root {
+            --primary: #007AFF;
+            --primary-dark: #0062CC;
+            --primary-light: #E6F2FF;
+            --text: #1C1C1E;
+            --bg: #F2F2F7;
+            --key-bg: #FFFFFF;
+            --key-shadow: rgba(0, 0, 0, 0.1);
+            --key-text: #000000;
+            --key-secondary-text: #5F5F5F;
+            --key-radius: 5px;
+            --keyboard-bg: #D1D5DB;
+            --keyboard-radius: 8px;
+            --key-gap: 5px;
+            --key-height: 48px;
+            --special-key-bg: #CFD4DE;
+            --transition-duration: 0.15s;
+        }
 
-   <head>
-       <meta charset="UTF-8">
-       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-       <title>Email Keyboard</title>
-       <style>
-           :root {
-               --primary: #007AFF;
-               --primary-dark: #0062CC;
-               --primary-light: #E6F2FF;
-               --text: #1C1C1E;
-               --bg: #F2F2F7;
-               --card-radius: 16px;
-           }
+        .dark-mode {
+            --primary: #0A84FF;
+            --primary-dark: #0062CC;
+            --primary-light: #003366;
+            --text: #FFFFFF;
+            --bg: #1C1C1E;
+            --key-bg: #2C2C2E;
+            --key-shadow: rgba(0, 0, 0, 0.3);
+            --key-text: #FFFFFF;
+            --key-secondary-text: #AEAEB2;
+            --keyboard-bg: #1C1C1E;
+            --special-key-bg: #3A3A3C;
+        }
 
-           .dark-mode {
-               --primary: #0A84FF;
-               --primary-dark: #0062CC;
-               --primary-light: #003366;
-               --text: #FFFFFF;
-               --bg: #1C1C1E;
-           }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
 
-           * {
-               box-sizing: border-box;
-               -webkit-tap-highlight-color: transparent;
-           }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            touch-action: manipulation;
+            padding: 10px;
+            transition: background-color var(--transition-duration);
+        }
 
-           body {
-               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-               margin: 0;
-               padding: 0;
-               background-color: var(--bg);
-               color: var(--text);
-               min-height: 100vh;
-               display: flex;
-               justify-content: center;
-               align-items: center;
-               touch-action: manipulation;
-           }
+        .keyboard-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--keyboard-bg);
+            border-radius: var(--keyboard-radius);
+            padding: 8px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            transition: background-color var(--transition-duration);
+        }
 
-           .keyboard-container {
-               width: 100%;
-               max-width: 500px;
-               padding: 15px;
-               text-align: center;
-           }
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: var(--key-gap);
+            margin-bottom: var(--key-gap);
+            direction: ltr;
+        }
 
-           .generate-btn {
-               width: 100%;
-               height: 120px;
-               background-color: var(--primary);
-               color: white;
-               border: none;
-               border-radius: var(--card-radius);
-               font-size: 22px;
-               font-weight: 600;
-               display: flex;
-               flex-direction: column;
-               align-items: center;
-               justify-content: center;
-               gap: 10px;
-               padding: 20px;
-               cursor: pointer;
-               transition: all 0.2s;
-               box-shadow: 0 6px 15px rgba(0, 122, 255, 0.3);
-               position: relative;
-               overflow: hidden;
-           }
+        .key {
+            height: var(--key-height);
+            min-width: calc(var(--key-height) * 0.8);
+            background-color: var(--key-bg);
+            border-radius: var(--key-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--key-text);
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 1px 1px var(--key-shadow);
+            transition: all var(--transition-duration);
+            position: relative;
+            flex: 1;
+            padding: 0 5px;
+            border: none;
+            outline: none;
+            direction: ltr;
+        }
 
-           .generate-btn:active {
-               background-color: var(--primary-dark);
-               transform: scale(0.98);
-           }
+        .key:active {
+            background-color: var(--primary-light);
+            transform: scale(0.95);
+        }
 
-           .icon {
-               width: 36px;
-               height: 36px;
-               background-color: var(--primary-light);
-               border-radius: 50%;
-               display: flex;
-               align-items: center;
-               justify-content: center;
-               padding: 8px;
-           }
+        .key.special {
+            background-color: var(--special-key-bg);
+            font-size: 14px;
+        }
 
-           .btn-text {
-               font-size: 18px;
-               letter-spacing: 0.5px;
-           }
+        .key.space {
+            flex: 8;
+        }
 
-           [dir="rtl"] .btn-text {
-               letter-spacing: 0;
-           }
-       </style>
-   </head>
+        .key.active {
+            background-color: var(--primary);
+            color: white;
+        }
 
-   <body>
-       <div class="keyboard-container">
-           <button class="generate-btn" id="generateBtn">
-               <div class="icon">
-                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                       <polyline points="22,6 12,13 2,6"></polyline>
-                   </svg>
-               </div>
-               <span class="btn-text" id="btnText">Generate Email</span>
-           </button>
-       </div>
+        .key.primary-action {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
 
-       <script>
-           document.addEventListener('DOMContentLoaded', function () {
-               const generateBtn = document.getElementById('generateBtn');
-               const btnText = document.getElementById('btnText');
+        .key .secondary-char {
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            font-size: 10px;
+            color: var(--key-secondary-text);
+        }
 
-               // Language detection
-               const isArabic = navigator.language.startsWith('ar');
-               if (isArabic) {
-                   document.documentElement.dir = 'rtl';
-                   btnText.textContent = 'توليد بريد إلكتروني';
-               }
+        [dir="rtl"] .key .secondary-char {
+            left: 5px;
+            right: auto;
+        }
 
-               // Generate random email
-               function generateEmail() {
-                   const firstNames = ['john', 'jane', 'mike', 'sarah', 'david', 'emma', 'alex', 'lisa'];
-                   const lastNames = ['smith', 'johnson', 'williams', 'brown', 'jones', 'miller'];
-                   const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
+        .dark-mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--key-bg);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 100;
+            border: none;
+            outline: none;
+        }
 
-                   const randomName = firstNames[Math.floor(Math.random() * firstNames.length)];
-                   const randomLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-                   const randomNum = Math.floor(Math.random() * 1000);
-                   const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+        .special-buttons-row .key {
+            flex: 0 1 45%;
+            height: 60px;
+            flex-direction: column;
+            gap: 5px;
+        }
 
-                   return `${randomName}.${randomLastName}${randomNum}@${randomDomain}`;
-               }
+        .special-buttons-row .key svg {
+            width: 24px;
+            height: 24px;
+        }
 
-               // Copy to clipboard silently
-               function copyToClipboard(text) {
-                   if (window.median && window.median.clipboard) {
-                       window.median.clipboard.set(text);
-                   } else if (navigator.clipboard) {
-                       navigator.clipboard.writeText(text).catch(err => {
-                           console.error('Failed to copy:', err);
-                       });
-                   }
-               }
+        .special-buttons-row .key span {
+            font-size: 14px;
+        }
 
-               // Insert text (placeholder for Median JavaScript Bridge)
-               function insertText(text) {
-                   if (window.median && window.median.keyboard) {
-                       // Hypothetical Median keyboard API
-                       window.median.keyboard.insertText(text, () => {
-                           console.log('Text inserted');
-                       }, (err) => {
-                           console.error('Insert failed:', err);
-                       });
-                   } else {
-                       console.log('No keyboard API available, email copied:', text);
-                   }
-               }
+        @keyframes keyPress {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
 
-               // Button click handler
-               generateBtn.addEventListener('click', function () {
-                   const email = generateEmail();
-                   copyToClipboard(email);
-                   insertText(email);
-               });
+        .key-press-animation {
+            animation: keyPress 0.1s ease;
+        }
 
-               // Dark mode detection
-               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                   document.body.classList.add('dark-mode');
-               }
-           });
-       </script>
-   </body>
+        .hidden {
+            display: none;
+        }
 
-   </html>
+        /* حقل الإدخال الاختباري */
+        #testInput {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            background-color: var(--key-bg);
+            color: var(--text);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- حقل إدخال للاختبار -->
+    <input type="text" id="testInput" placeholder="اضغط على أزرار Generate لاختبارها هنا">
+    
+    <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
+        <svg id="darkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <svg id="lightIcon" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+    </button>
+
+    <div class="keyboard-container" id="keyboardContainer">
+        <!-- Special Actions Row -->
+        <div class="keyboard-row special-buttons-row">
+            <button class="key special primary-action" id="generateTextKey" aria-label="Generate random text">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Text</span>
+            </button>
+            <button class="key special primary-action" id="generateEmailKey" aria-label="Generate random email">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <span>Email</span>
+            </button>
+        </div>
+
+        <!-- Numbers Row -->
+        <div class="keyboard-row">
+            <button class="key" data-char="1" data-secondary="!">1<span class="secondary-char">!</span></button>
+            <button class="key" data-char="2" data-secondary="@">2<span class="secondary-char">@</span></button>
+            <button class="key" data-char="3" data-secondary="#">3<span class="secondary-char">#</span></button>
+            <button class="key" data-char="4" data-secondary="$">4<span class="secondary-char">$</span></button>
+            <button class="key" data-char="5" data-secondary="%">5<span class="secondary-char">%</span></button>
+            <button class="key" data-char="6" data-secondary="^">6<span class="secondary-char">^</span></button>
+            <button class="key" data-char="7" data-secondary="&">7<span class="secondary-char">&</span></button>
+            <button class="key" data-char="8" data-secondary="*">8<span class="secondary-char">*</span></button>
+            <button class="key" data-char="9" data-secondary="(">9<span class="secondary-char">(</span></button>
+            <button class="key" data-char="0" data-secondary=")">0<span class="secondary-char">)</span></button>
+        </div>
+
+        <!-- First Letter Row -->
+        <div class="keyboard-row">
+            <button class="key" data-char="q" data-secondary="Q" data-ar="ض" data-ar-secondary="َ">Q<span
+                    class="secondary-char">َ</span></button>
+            <button class="key" data-char="w" data-secondary="W" data-ar="ص" data-ar-secondary="ً">W<span
+                    class="secondary-char">ً</span></button>
+            <button class="key" data-char="e" data-secondary="E" data-ar="ث" data-ar-secondary="ُ">E<span
+                    class="secondary-char">ُ</span></button>
+            <button class="key" data-char="r" data-secondary="R" data-ar="ق" data-ar-secondary="ٌ">R<span
+                    class="secondary-char">ٌ</span></button>
+            <button class="key" data-char="t" data-secondary="T" data-ar="ف" data-ar-secondary="ِ">T<span
+                    class="secondary-char">ِ</span></button>
+            <button class="key" data-char="y" data-secondary="Y" data-ar="غ" data-ar-secondary="ٍ">Y<span
+                    class="secondary-char">ٍ</span></button>
+            <button class="key" data-char="u" data-secondary="U" data-ar="ع" data-ar-secondary="ْ">U<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="i" data-secondary="I" data-ar="ه" data-ar-secondary="ّ">I<span
+                    class="secondary-char">ّ</span></button>
+            <button class="key" data-char="o" data-secondary="O" data-ar="خ" data-ar-secondary="~">O<span
+                    class="secondary-char">~</span></button>
+            <button class="key" data-char="p" data-secondary="P" data-ar="ح" data-ar-secondary="ْ">P<span
+                    class="secondary-char">ْ</span></button>
+        </div>
+
+        <!-- Second Letter Row -->
+        <div class="keyboard-row">
+            <button class="key" data-char="a" data-secondary="A" data-ar="ش" data-ar-secondary="ْ">A<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="s" data-secondary="S" data-ar="س" data-ar-secondary="ْ">S<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="d" data-secondary="D" data-ar="ي" data-ar-secondary="ْ">D<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="f" data-secondary="F" data-ar="ب" data-ar-secondary="ْ">F<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="g" data-secondary="G" data-ar="ل" data-ar-secondary="ْ">G<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="h" data-secondary="H" data-ar="ا" data-ar-secondary="ْ">H<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="j" data-secondary="J" data-ar="ت" data-ar-secondary="ْ">J<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="k" data-secondary="K" data-ar="ن" data-ar-secondary="ْ">K<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="l" data-secondary="L" data-ar="م" data-ar-secondary="ْ">L<span
+                    class="secondary-char">ْ</span></button>
+        </div>
+
+        <!-- Third Letter Row -->
+        <div class="keyboard-row">
+            <button class="key special" id="shiftKey" aria-label="Shift">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 3v18M5 11l7-7 7 7M19 15l-7 7-7-7"></path>
+                </svg>
+            </button>
+            <button class="key" data-char="z" data-secondary="Z" data-ar="ئ" data-ar-secondary="ْ">Z<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="x" data-secondary="X" data-ar="ء" data-ar-secondary="ْ">X<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="c" data-secondary="C" data-ar="ؤ" data-ar-secondary="ْ">C<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="v" data-secondary="V" data-ar="ر" data-ar-secondary="ْ">V<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="b" data-secondary="B" data-ar="ﻻ" data-ar-secondary="ْ">B<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="n" data-secondary="N" data-ar="ى" data-ar-secondary="ْ">N<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key" data-char="m" data-secondary="M" data-ar="ة" data-ar-secondary="ْ">M<span
+                    class="secondary-char">ْ</span></button>
+            <button class="key special" id="backspaceKey" aria-label="Backspace">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                    <line x1="18" y1="9" x2="12" y2="15"></line>
+                    <line x1="12" y1="9" x2="18" y2="15"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="keyboard-row">
+            <button class="key special" id="langKey" aria-label="Change language">EN</button>
+            <button class="key space" id="spaceKey" aria-label="Space"></button>
+            <button class="key special" data-char="." data-secondary="," data-ar="." data-ar-secondary="،">.<span
+                    class="secondary-char">,</span></button>
+            <button class="key special" id="enterKey" aria-label="Enter">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 10l-5 5 5 5"></path>
+                    <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class SmartKeyboard {
+            constructor() {
+                this.keyboardContainer = document.getElementById('keyboardContainer');
+                this.shiftKey = document.getElementById('shiftKey');
+                this.langKey = document.getElementById('langKey');
+                this.spaceKey = document.getElementById('spaceKey');
+                this.generateEmailKey = document.getElementById('generateEmailKey');
+                this.generateTextKey = document.getElementById('generateTextKey');
+                this.backspaceKey = document.getElementById('backspaceKey');
+                this.enterKey = document.getElementById('enterKey');
+                this.darkModeToggle = document.getElementById('darkModeToggle');
+                this.darkIcon = document.getElementById('darkIcon');
+                this.lightIcon = document.getElementById('lightIcon');
+
+                this.currentLanguage = navigator.language.startsWith('ar') ? 'ar' : 'en';
+                this.isShiftActive = false;
+                this.isCapsActive = false;
+                this.isSecondaryActive = false;
+
+                this.init();
+            }
+
+            init() {
+                this.setLanguage(this.currentLanguage);
+                this.checkSystemDarkMode();
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.keyboardContainer.addEventListener('click', (e) => {
+                    const key = e.target.closest('.key');
+                    if (!key) return;
+
+                    this.animateKeyPress(key);
+
+                    if (key === this.shiftKey) {
+                        this.toggleShift();
+                        return;
+                    }
+
+                    if (key === this.langKey) {
+                        this.toggleLanguage();
+                        return;
+                    }
+
+                    if (key === this.spaceKey) {
+                        this.insertToActiveField(' ');
+                        return;
+                    }
+
+                    if (key === this.backspaceKey) {
+                        this.backspace();
+                        return;
+                    }
+
+                    if (key === this.enterKey) {
+                        this.insertToActiveField('\n');
+                        return;
+                    }
+
+                    if (key === this.generateEmailKey) {
+                        this.generateEmail();
+                        return;
+                    }
+
+                    if (key === this.generateTextKey) {
+                        this.generateRandomText();
+                        return;
+                    }
+
+                    if (key.dataset.char) {
+                        const char = this.getKeyChar(key);
+                        this.insertToActiveField(char);
+
+                        if (this.isShiftActive && !this.isCapsActive) {
+                            this.toggleShift();
+                        }
+                    }
+                });
+
+                this.darkModeToggle.addEventListener('click', () => this.toggleDarkMode());
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Shift') {
+                        this.isShiftActive = true;
+                        this.updateShiftState();
+                    }
+                });
+
+                document.addEventListener('keyup', (e) => {
+                    if (e.key === 'Shift') {
+                        this.isShiftActive = false;
+                        this.updateShiftState();
+                    }
+                });
+            }
+
+            generateEmail() {
+                // توليد اسم أول عشوائي
+                const firstName = this.generateRandomName(3 + Math.floor(Math.random() * 5));
+                
+                // توليد اسم عائلي عشوائي
+                const lastName = this.generateRandomName(3 + Math.floor(Math.random() * 7));
+                
+                // توليد أرقام عشوائية
+                const randomNum = Math.floor(Math.random() * 1000);
+                
+                // قائمة نطاقات بريدية
+                const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'protonmail.com'];
+                const domain = domains[Math.floor(Math.random() * domains.length)];
+                
+                // إنشاء البريد الإلكتروني
+                const email = `${firstName}.${lastName}${randomNum}@${domain}`;
+                
+                // إدراج البريد في حقل الإدخال النشط
+                this.insertToActiveField(email);
+            }
+
+            generateRandomText() {
+                // طول النص العشوائي (بين 5-15 كلمة)
+                const wordCount = 5 + Math.floor(Math.random() * 11);
+                let text = '';
+                
+                for (let i = 0; i < wordCount; i++) {
+                    // توليد كلمة عشوائية
+                    const wordLength = 2 + Math.floor(Math.random() * 8);
+                    const word = this.generateRandomName(wordLength);
+                    
+                    // إضافة الكلمة للنص مع مسافة
+                    text += (i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word) + ' ';
+                    
+                    // إضافة علامات ترقيم عشوائية
+                    if (i > 0 && Math.random() > 0.7) {
+                        text = text.trim() + (Math.random() > 0.5 ? ', ' : '. ');
+                        if (i < wordCount - 1) {
+                            const nextWord = this.generateRandomName(2 + Math.floor(Math.random() * 8));
+                            text += nextWord.charAt(0).toUpperCase() + nextWord.slice(1) + ' ';
+                            i++;
+                        }
+                    }
+                }
+                
+                // إنهاء النص بعلامة ترقيم
+                text = text.trim() + (Math.random() > 0.3 ? '.' : '!');
+                
+                // إدراج النص في حقل الإدخال النشط
+                this.insertToActiveField(text);
+            }
+
+            generateRandomName(length) {
+                const consonants = 'bcdfghjklmnpqrstvwxyz';
+                const vowels = 'aeiou';
+                let name = '';
+                
+                for (let i = 0; i < length; i++) {
+                    if (i % 2 === 0 || Math.random() > 0.7) {
+                        name += consonants.charAt(Math.floor(Math.random() * consonants.length));
+                    } else {
+                        name += vowels.charAt(Math.floor(Math.random() * vowels.length));
+                    }
+                }
+                
+                return name;
+            }
+
+            insertToActiveField(text) {
+                const activeElement = document.activeElement;
+                if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                    // الحصول على موضع المؤشر الحالي
+                    const start = activeElement.selectionStart;
+                    const end = activeElement.selectionEnd;
+                    
+                    // إدراج النص في موضع المؤشر
+                    activeElement.value = activeElement.value.substring(0, start) + 
+                                        text + 
+                                        activeElement.value.substring(end);
+                    
+                    // تحديث موضع المؤشر
+                    activeElement.selectionStart = activeElement.selectionEnd = start + text.length;
+                    
+                    // إطلاق حدث التغيير
+                    activeElement.dispatchEvent(new Event('input', { bubbles: true }));
+                } else {
+                    // إذا لم يكن هناك حقل إدخال نشط، طباعة النص في الكونسول
+                    console.log('Generated:', text);
+                }
+            }
+
+            animateKeyPress(key) {
+                key.classList.add('key-press-animation');
+                setTimeout(() => {
+                    key.classList.remove('key-press-animation');
+                }, 100);
+            }
+
+            getKeyChar(key) {
+                if (this.currentLanguage === 'ar') {
+                    return this.isShiftActive ? key.dataset.arSecondary || key.dataset.ar : key.dataset.ar;
+                }
+
+                return this.isShiftActive ? key.dataset.secondary || key.dataset.char : key.dataset.char;
+            }
+
+            toggleShift() {
+                this.isShiftActive = !this.isShiftActive;
+                this.updateShiftState();
+            }
+
+            updateShiftState() {
+                this.shiftKey.classList.toggle('active', this.isShiftActive);
+                this.updateKeyLabels();
+            }
+
+            toggleLanguage() {
+                this.currentLanguage = this.currentLanguage === 'en' ? 'ar' : 'en';
+                this.setLanguage(this.currentLanguage);
+            }
+
+            setLanguage(lang) {
+                this.currentLanguage = lang;
+                this.langKey.textContent = lang === 'en' ? 'عربي' : 'English';
+                this.langKey.classList.toggle('active', lang === 'ar');
+                this.updateKeyLabels();
+            }
+
+            updateKeyLabels() {
+                const keys = document.querySelectorAll('.key[data-char]');
+                keys.forEach(key => {
+                    const primaryChar = this.currentLanguage === 'ar' ?
+                        (this.isShiftActive ? key.dataset.arSecondary || key.dataset.ar : key.dataset.ar) :
+                        (this.isShiftActive ? key.dataset.secondary || key.dataset.char : key.dataset.char);
+
+                    const secondaryChar = this.currentLanguage === 'ar' ?
+                        (this.isShiftActive ? key.dataset.ar : key.dataset.arSecondary || '') :
+                        (this.isShiftActive ? key.dataset.char : key.dataset.secondary || '');
+
+                    if (key.querySelector('.primary-char')) {
+                        key.querySelector('.primary-char').textContent = primaryChar;
+                    } else {
+                        key.innerHTML = `${primaryChar}<span class="secondary-char">${secondaryChar}</span>`;
+                    }
+
+                    if (secondaryChar && key.querySelector('.secondary-char')) {
+                        key.querySelector('.secondary-char').textContent = secondaryChar;
+                    }
+                });
+            }
+
+            toggleDarkMode() {
+                document.body.classList.toggle('dark-mode');
+                this.darkIcon.classList.toggle('hidden');
+                this.lightIcon.classList.toggle('hidden');
+            }
+
+            checkSystemDarkMode() {
+                const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+                if (darkModeMediaQuery.matches) {
+                    document.body.classList.add('dark-mode');
+                    this.darkIcon.classList.add('hidden');
+                    this.lightIcon.classList.remove('hidden');
+                }
+
+                darkModeMediaQuery.addListener((e) => {
+                    if (e.matches) {
+                        document.body.classList.add('dark-mode');
+                        this.darkIcon.classList.add('hidden');
+                        this.lightIcon.classList.remove('hidden');
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                        this.darkIcon.classList.remove('hidden');
+                        this.lightIcon.classList.add('hidden');
+                    }
+                });
+            }
+
+            backspace() {
+                const activeElement = document.activeElement;
+                if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                    const start = activeElement.selectionStart;
+                    const end = activeElement.selectionEnd;
+                    
+                    if (start === end && start > 0) {
+                        activeElement.value = activeElement.value.substring(0, start - 1) + 
+                                          activeElement.value.substring(end);
+                        activeElement.selectionStart = activeElement.selectionEnd = start - 1;
+                    } else if (start !== end) {
+                        activeElement.value = activeElement.value.substring(0, start) + 
+                                          activeElement.value.substring(end);
+                        activeElement.selectionStart = activeElement.selectionEnd = start;
+                    }
+                    
+                    activeElement.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        }
+
+        // Initialize the keyboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new SmartKeyboard();
+        });
+    </script>
+</body>
+</html>
