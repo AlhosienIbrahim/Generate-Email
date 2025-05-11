@@ -18,10 +18,11 @@
             --key-radius: 5px;
             --keyboard-bg: #D1D5DB;
             --keyboard-radius: 8px;
-            --key-gap: 5px;
+            --key-gap: 4px;
             --key-height: 48px;
             --special-key-bg: #CFD4DE;
             --transition-duration: 0.15s;
+            --font-size-base: 16px;
         }
 
         .dark-mode {
@@ -52,21 +53,25 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
             touch-action: manipulation;
             padding: 10px;
             transition: background-color var(--transition-duration);
+            overscroll-behavior: none;
         }
 
         .keyboard-container {
             width: 100%;
-            max-width: 600px;
+            max-width: 100%;
             background-color: var(--keyboard-bg);
             border-radius: var(--keyboard-radius);
-            padding: 8px;
+            padding: 6px;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             transition: background-color var(--transition-duration);
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
         }
 
         .keyboard-row {
@@ -79,13 +84,13 @@
 
         .key {
             height: var(--key-height);
-            min-width: calc(var(--key-height) * 0.8);
+            min-width: calc(var(--key-height) * 0.7);
             background-color: var(--key-bg);
             border-radius: var(--key-radius);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: var(--font-size-base);
             font-weight: 500;
             color: var(--key-text);
             cursor: pointer;
@@ -94,10 +99,11 @@
             transition: all var(--transition-duration);
             position: relative;
             flex: 1;
-            padding: 0 5px;
+            padding: 0 4px;
             border: none;
             outline: none;
             direction: ltr;
+            touch-action: manipulation;
         }
 
         .key:active {
@@ -107,11 +113,11 @@
 
         .key.special {
             background-color: var(--special-key-bg);
-            font-size: 14px;
+            font-size: calc(var(--font-size-base) * 0.875);
         }
 
         .key.space {
-            flex: 8;
+            flex: 6;
         }
 
         .key.active {
@@ -127,25 +133,25 @@
 
         .key .secondary-char {
             position: absolute;
-            top: 3px;
-            right: 5px;
-            font-size: 10px;
+            top: 2px;
+            right: 4px;
+            font-size: calc(var(--font-size-base) * 0.625);
             color: var(--key-secondary-text);
         }
 
         [dir="rtl"] .key .secondary-char {
-            left: 5px;
+            left: 4px;
             right: auto;
         }
 
         .dark-mode-toggle {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 10px;
+            right: 10px;
             background: var(--key-bg);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -157,19 +163,19 @@
         }
 
         .special-buttons-row .key {
-            flex: 0 1 45%;
-            height: 60px;
+            flex: 0 1 48%;
+            height: 56px;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
 
         .special-buttons-row .key svg {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
         }
 
         .special-buttons-row .key span {
-            font-size: 14px;
+            font-size: calc(var(--font-size-base) * 0.875);
         }
 
         @keyframes keyPress {
@@ -188,27 +194,100 @@
 
         #testInput {
             width: 100%;
-            max-width: 600px;
-            margin-bottom: 20px;
-            padding: 12px;
-            font-size: 16px;
+            max-width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            font-size: var(--font-size-base);
             border: 2px solid var(--primary);
             border-radius: 8px;
             background-color: var(--key-bg);
             color: var(--text);
+            box-sizing: border-box;
+            resize: none;
         }
-        
-        /* Long press backspace animation */
+
         .backspace-active {
             background-color: var(--primary-light) !important;
             transform: scale(0.95);
         }
+
+        /* Media Queries for Mobile Responsiveness */
+        @media (max-width: 600px) {
+            :root {
+                --key-height: 42px;
+                --key-gap: 3px;
+                --key-radius: 4px;
+                --keyboard-radius: 6px;
+                --font-size-base: 14px;
+            }
+
+            body {
+                padding: 5px;
+            }
+
+            .keyboard-container {
+                padding: 4px;
+            }
+
+            .key {
+                min-width: calc(var(--key-height) * 0.65);
+                padding: 0 3px;
+            }
+
+            .special-buttons-row .key {
+                height: 50px;
+            }
+
+            .dark-mode-toggle {
+                width: 32px;
+                height: 32px;
+            }
+
+            .dark-mode-toggle svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            #testInput {
+                margin: 5px 0;
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            :root {
+                --key-height: 38px;
+                --key-gap: 2px;
+                --font-size-base: 13px;
+            }
+
+            .key {
+                min-width: calc(var(--key-height) * 0.6);
+            }
+
+            .special-buttons-row .key {
+                height: 46px;
+            }
+        }
+
+        @media (max-height: 600px) {
+            body {
+                padding-bottom: 0;
+            }
+
+            .keyboard-container {
+                padding-bottom: 2px;
+            }
+
+            #testInput {
+                max-height: 100px;
+            }
+        }
     </style>
 </head>
-
 <body>
-    <input type="text" id="testInput" placeholder="اضغط على أزرار Generate لاختبارها هنا">
-    
+    <textarea id="testInput" placeholder="اضغط على أزرار Generate لاختبارها هنا" rows="3"></textarea>
+
     <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
         <svg id="darkIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -227,7 +306,6 @@
     </button>
 
     <div class="keyboard-container" id="keyboardContainer">
-        <!-- Special Actions Row -->
         <div class="keyboard-row special-buttons-row">
             <button class="key special primary-action" id="generateTextKey" aria-label="Generate random name">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -244,8 +322,6 @@
                 <span>Email</span>
             </button>
         </div>
-
-        <!-- Numbers Row -->
         <div class="keyboard-row">
             <button class="key" data-char="1" data-secondary="!" data-ar="1" data-ar-secondary="!">1<span class="secondary-char">!</span></button>
             <button class="key" data-char="2" data-secondary="@" data-ar="2" data-ar-secondary="@">2<span class="secondary-char">@</span></button>
@@ -258,8 +334,6 @@
             <button class="key" data-char="9" data-secondary="(" data-ar="9" data-ar-secondary="(">9<span class="secondary-char">(</span></button>
             <button class="key" data-char="0" data-secondary=")" data-ar="0" data-ar-secondary=")">0<span class="secondary-char">)</span></button>
         </div>
-
-        <!-- First Letter Row -->
         <div class="keyboard-row">
             <button class="key" data-char="q" data-secondary="Q" data-ar="ض" data-ar-secondary="َ">Q<span class="secondary-char">َ</span></button>
             <button class="key" data-char="w" data-secondary="W" data-ar="ص" data-ar-secondary="ً">W<span class="secondary-char">ً</span></button>
@@ -272,8 +346,6 @@
             <button class="key" data-char="o" data-secondary="O" data-ar="خ" data-ar-secondary="~">O<span class="secondary-char">~</span></button>
             <button class="key" data-char="p" data-secondary="P" data-ar="ح" data-ar-secondary="ْ">P<span class="secondary-char">ْ</span></button>
         </div>
-
-        <!-- Second Letter Row -->
         <div class="keyboard-row">
             <button class="key" data-char="a" data-secondary="A" data-ar="ش" data-ar-secondary="ْ">A<span class="secondary-char">ْ</span></button>
             <button class="key" data-char="s" data-secondary="S" data-ar="س" data-ar-secondary="ْ">S<span class="secondary-char">ْ</span></button>
@@ -285,8 +357,6 @@
             <button class="key" data-char="k" data-secondary="K" data-ar="ن" data-ar-secondary="ْ">K<span class="secondary-char">ْ</span></button>
             <button class="key" data-char="l" data-secondary="L" data-ar="م" data-ar-secondary="ْ">L<span class="secondary-char">ْ</span></button>
         </div>
-
-        <!-- Third Letter Row -->
         <div class="keyboard-row">
             <button class="key special" id="shiftKey" aria-label="Shift">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -308,8 +378,6 @@
                 </svg>
             </button>
         </div>
-
-        <!-- Bottom Row -->
         <div class="keyboard-row">
             <button class="key special" id="langKey" aria-label="Change language">عربي</button>
             <button class="key space" id="spaceKey" aria-label="Space"></button>
@@ -330,13 +398,31 @@
                 isShiftActive: false,
                 inputField: document.getElementById('testInput'),
                 backspaceInterval: null,
-                backspaceDelay: 500, // milliseconds before continuous backspace starts
-                backspaceSpeed: 100, // milliseconds between each backspace during continuous press
+                backspaceDelay: 500,
+                backspaceSpeed: 100,
                 
                 init() {
                     this.setupEventListeners();
                     this.setLanguage(navigator.language.startsWith('ar') ? 'ar' : 'en');
                     this.inputField.focus();
+                    this.adjustKeyboardHeight();
+                    window.addEventListener('resize', () => this.adjustKeyboardHeight());
+                },
+                
+                adjustKeyboardHeight() {
+                    const keyboardContainer = document.getElementById('keyboardContainer');
+                    const inputField = this.inputField;
+                    const viewportHeight = window.innerHeight;
+                    const keyboardHeight = keyboardContainer.offsetHeight;
+                    const inputHeight = inputField.offsetHeight;
+                    const availableHeight = viewportHeight - inputHeight - 20;
+                    
+                    if (keyboardHeight > availableHeight) {
+                        keyboardContainer.style.transform = `scale(${availableHeight / keyboardHeight})`;
+                        keyboardContainer.style.transformOrigin = 'bottom';
+                    } else {
+                        keyboardContainer.style.transform = 'scale(1)';
+                    }
                 },
                 
                 setupEventListeners() {
@@ -363,7 +449,6 @@
                         document.getElementById('lightIcon').classList.toggle('hidden');
                     });
                     
-                    // Touch events for backspace long press
                     const backspaceKey = document.getElementById('backspaceKey');
                     backspaceKey.addEventListener('touchstart', (e) => {
                         e.preventDefault();
@@ -385,6 +470,12 @@
                     
                     backspaceKey.addEventListener('mouseleave', () => {
                         this.stopContinuousBackspace();
+                    });
+                    
+                    this.inputField.addEventListener('focus', () => {
+                        setTimeout(() => {
+                            this.inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
                     });
                 },
                 
@@ -409,10 +500,7 @@
                 },
                 
                 handleBackspacePress() {
-                    // Single backspace action
                     this.backspace();
-                    
-                    // Set up for possible long press
                     this.stopContinuousBackspace();
                     this.startContinuousBackspace();
                 },
@@ -421,7 +509,6 @@
                     const backspaceKey = document.getElementById('backspaceKey');
                     backspaceKey.classList.add('backspace-active');
                     
-                    // After a delay, start continuous backspace
                     this.backspaceInterval = setTimeout(() => {
                         this.backspaceInterval = setInterval(() => {
                             this.backspace();
@@ -442,7 +529,6 @@
                 
                 backspace() {
                     if (this.inputField.selectionStart === this.inputField.selectionEnd) {
-                        // No text selected - delete one character
                         if (this.inputField.selectionStart > 0) {
                             const start = this.inputField.selectionStart;
                             this.inputField.value = this.inputField.value.substring(0, start - 1) + 
@@ -450,7 +536,6 @@
                             this.inputField.selectionStart = this.inputField.selectionEnd = start - 1;
                         }
                     } else {
-                        // Text is selected - delete the selection
                         const start = this.inputField.selectionStart;
                         const end = this.inputField.selectionEnd;
                         this.inputField.value = this.inputField.value.substring(0, start) + 
@@ -489,12 +574,10 @@
                             secondaryChar = this.isShiftActive ? key.dataset.char : (key.dataset.secondary || '');
                         }
                         
-                        // Clear existing content
                         while (key.firstChild) {
                             key.removeChild(key.firstChild);
                         }
                         
-                        // Add new content
                         const primarySpan = document.createElement('span');
                         primarySpan.textContent = primaryChar;
                         key.appendChild(primarySpan);
