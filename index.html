@@ -391,18 +391,17 @@
     </div>
 
     <script>
-        // Initialize keyboard on DOM load
         document.addEventListener('DOMContentLoaded', () => {
             const keyboard = {
                 currentLanguage: 'en',
                 isShiftActive: false,
                 inputField: document.getElementById('testInput'),
                 backspaceInterval: null,
-                backspaceDelay: 300, // Delay before continuous backspace
-                backspaceSpeed: 50, // Speed of continuous backspace
-                pressedKeys: new Set(), // Track pressed keys for multi-key input
+                backspaceDelay: 500,
+                backspaceSpeed: 50,
+                pressedKeys: new Set(),
+                lastBackspaceTime: 0,
 
-                // Setup initial state and event listeners
                 init() {
                     this.setLanguage(navigator.language.startsWith('ar') ? 'ar' : 'en');
                     this.setupEventListeners();
@@ -411,7 +410,6 @@
                     window.addEventListener('resize', () => this.adjustKeyboardHeight());
                 },
 
-                // Adjust keyboard scale for small screens
                 adjustKeyboardHeight() {
                     const keyboardContainer = document.getElementById('keyboardContainer');
                     const inputHeight = this.inputField.offsetHeight;
@@ -423,47 +421,36 @@
                     keyboardContainer.style.transformOrigin = 'bottom';
                 },
 
-                // Setup click, touch, and key event listeners
                 setupEventListeners() {
-                    // Handle key clicks and animations
-                    document.addEventListener('click', (e) => {
+                    // Handle pointer events (mouse and touch)
+                    document.addEventListener('pointerdown', (e) => {
                         const key = e.target.closest('.key');
                         if (!key) return;
+                        
                         this.animateKey(key);
                         this.handleKeyAction(key);
+                        
+                        if (key.id === 'backspaceKey') {
+                            this.startContinuousBackspace();
+                            document.addEventListener('pointerup', this.stopBackspaceHandler);
+                            document.addEventListener('pointercancel', this.stopBackspaceHandler);
+                        }
                     });
 
-                    // Handle touchstart for immediate response
-                    document.querySelectorAll('.key').forEach(key => {
-                        key.addEventListener('touchstart', (e) => {
-                            e.preventDefault();
-                            this.animateKey(key);
-                            this.handleKeyAction(key);
-                            if (key.id === 'backspaceKey') this.startContinuousBackspace();
-                        });
-                        key.addEventListener('touchend', (e) => {
-                            e.preventDefault();
-                            if (key.id === 'backspaceKey') this.stopContinuousBackspace();
-                        });
-                    });
-
-                    // Handle keyboard input for multi-key support
+                    // Keyboard events
                     document.addEventListener('keydown', (e) => {
                         if (this.pressedKeys.has(e.key)) return;
                         this.pressedKeys.add(e.key);
-                        const key = this.findKeyByChar(e.key);
+                        
+                        const key = e.key === 'Backspace' ? document.getElementById('backspaceKey') :
+                                   e.key === 'Enter' ? document.getElementById('enterKey') :
+                                   e.key === ' ' ? document.getElementById('spaceKey') :
+                                   this.findKeyByChar(e.key);
+                        
                         if (key) {
                             this.animateKey(key);
                             this.handleKeyAction(key);
-                        } else if (e.key === 'Backspace') {
-                            this.animateKey(document.getElementById('backspaceKey'));
-                            this.handleBackspacePress();
-                        } else if (e.key === 'Enter') {
-                            this.animateKey(document.getElementById('enterKey'));
-                            this.insertText('\n');
-                        } else if (e.key === ' ') {
-                            this.animateKey(document.getElementById('spaceKey'));
-                            this.insertText(' ');
+                            if (key.id === 'backspaceKey') this.startContinuousBackspace();
                         }
                     });
 
@@ -472,45 +459,48 @@
                         if (e.key === 'Backspace') this.stopContinuousBackspace();
                     });
 
-                    // Toggle dark mode
+                    // Dark mode toggle
                     document.getElementById('darkModeToggle').addEventListener('click', () => {
                         document.body.classList.toggle('dark-mode');
                         document.getElementById('darkIcon').classList.toggle('hidden');
                         document.getElementById('lightIcon').classList.toggle('hidden');
                     });
 
-                    // Scroll input into view on focus
+                    // Input field focus
                     this.inputField.addEventListener('focus', () => {
                         setTimeout(() => {
                             this.inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }, 300);
                     });
+
+                    // Store bound function for event listener removal
+                    this.stopBackspaceHandler = () => this.stopContinuousBackspace();
                 },
 
-                // Animate key press
                 animateKey(key) {
                     key.classList.add('key-press-animation');
                     setTimeout(() => key.classList.remove('key-press-animation'), 100);
                 },
 
-                // Find key element by character
                 findKeyByChar(char) {
                     return document.querySelector(`.key[data-char="${char.toLowerCase()}"], .key[data-secondary="${char}"]`);
                 },
 
-                // Handle key actions based on key ID or data-char
                 handleKeyAction(key) {
-                    if (key.id === 'shiftKey') return this.toggleShift();
-                    if (key.id === 'langKey') return this.toggleLanguage();
-                    if (key.id === 'spaceKey') return this.insertText(' ');
-                    if (key.id === 'backspaceKey') return this.handleBackspacePress();
-                    if (key.id === 'enterKey') return this.insertText('\n');
-                    if (key.id === 'generateEmailKey') return this.generateEmail();
-                    if (key.id === 'generateTextKey') return this.generateName();
-                    if (key.dataset.char) return this.handleCharKey(key);
+                    const actions = {
+                        shiftKey: () => this.toggleShift(),
+                        langKey: () => this.toggleLanguage(),
+                        spaceKey: () => this.insertText(' '),
+                        backspaceKey: () => this.handleBackspacePress(),
+                        enterKey: () => this.insertText('\n'),
+                        generateEmailKey: () => this.generateEmail(),
+                        generateTextKey: () => this.generateName()
+                    };
+                    
+                    if (actions[key.id]) return actions[key.id]();
+                    if (key.dataset.char) this.handleCharKey(key);
                 },
 
-                // Insert character based on language and shift state
                 handleCharKey(key) {
                     const char = this.currentLanguage === 'ar'
                         ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
@@ -519,7 +509,6 @@
                     if (this.isShiftActive) this.toggleShift();
                 },
 
-                // Insert text at cursor position
                 insertText(text) {
                     const start = this.inputField.selectionStart;
                     this.inputField.value = this.inputField.value.substring(0, start) + text + 
@@ -528,70 +517,72 @@
                     this.inputField.focus();
                 },
 
-                // Handle backspace press (single or continuous)
                 handleBackspacePress() {
-                    if (!this.backspaceInterval) {
+                    const now = Date.now();
+                    if (now - this.lastBackspaceTime > 200) {
                         this.backspace();
-                        this.startContinuousBackspace();
                     }
+                    this.lastBackspaceTime = now;
                 },
 
-                // Start continuous backspace on hold
                 startContinuousBackspace() {
                     const backspaceKey = document.getElementById('backspaceKey');
                     backspaceKey.classList.add('backspace-active');
+                    
+                    clearInterval(this.backspaceInterval);
                     this.backspaceInterval = setTimeout(() => {
+                        this.backspace();
                         this.backspaceInterval = setInterval(() => this.backspace(), this.backspaceSpeed);
                     }, this.backspaceDelay);
                 },
 
-                // Stop continuous backspace
                 stopContinuousBackspace() {
                     const backspaceKey = document.getElementById('backspaceKey');
                     backspaceKey.classList.remove('backspace-active');
-                    if (this.backspaceInterval) {
-                        clearTimeout(this.backspaceInterval);
-                        clearInterval(this.backspaceInterval);
-                        this.backspaceInterval = null;
-                    }
+                    
+                    clearTimeout(this.backspaceInterval);
+                    clearInterval(this.backspaceInterval);
+                    this.backspaceInterval = null;
+                    
+                    document.removeEventListener('pointerup', this.stopBackspaceHandler);
+                    document.removeEventListener('pointercancel', this.stopBackspaceHandler);
                 },
 
-                // Delete one character or selected text
                 backspace() {
                     const start = this.inputField.selectionStart;
                     const end = this.inputField.selectionEnd;
-                    if (start === end && start > 0) {
+                    
+                    if (start === 0 && start === end) return false;
+
+                    if (start === end) {
                         this.inputField.value = this.inputField.value.substring(0, start - 1) + 
-                                                this.inputField.value.substring(start);
+                                              this.inputField.value.substring(start);
                         this.inputField.selectionStart = this.inputField.selectionEnd = start - 1;
-                    } else if (start !== end) {
+                    } else {
                         this.inputField.value = this.inputField.value.substring(0, start) + 
-                                                this.inputField.value.substring(end);
+                                              this.inputField.value.substring(end);
                         this.inputField.selectionStart = this.inputField.selectionEnd = start;
                     }
                     this.inputField.focus();
+                    return true;
                 },
 
-                // Toggle shift state and update key labels
                 toggleShift() {
                     this.isShiftActive = !this.isShiftActive;
                     document.getElementById('shiftKey').classList.toggle('active', this.isShiftActive);
                     this.updateKeyLabels();
                 },
 
-                // Toggle between English and Arabic
                 toggleLanguage() {
                     this.setLanguage(this.currentLanguage === 'en' ? 'ar' : 'en');
                 },
 
-                // Set language and update labels
                 setLanguage(lang) {
                     this.currentLanguage = lang;
                     document.getElementById('langKey').textContent = lang === 'en' ? 'عربي' : 'English';
                     this.updateKeyLabels();
                 },
 
-                // Update key labels based on language and shift
                 updateKeyLabels() {
                     document.querySelectorAll('.key[data-char]').forEach(key => {
                         const primaryChar = this.currentLanguage === 'ar'
@@ -601,20 +592,10 @@
                             ? this.isShiftActive ? key.dataset.ar : (key.dataset.arSecondary || '')
                             : this.isShiftActive ? key.dataset.char : (key.dataset.secondary || '');
 
-                        while (key.firstChild) key.removeChild(key.firstChild);
-                        const primarySpan = document.createElement('span');
-                        primarySpan.textContent = primaryChar;
-                        key.appendChild(primarySpan);
-                        if (secondaryChar) {
-                            const secondarySpan = document.createElement('span');
-                            secondarySpan.className = 'secondary-char';
-                            secondarySpan.textContent = secondaryChar;
-                            key.appendChild(secondarySpan);
-                        }
+                        key.innerHTML = `<span>${primaryChar}</span>${secondaryChar ? `<span class="secondary-char">${secondaryChar}</span>` : ''}`;
                     });
                 },
 
-                // Generate random name
                 generateRandomName(length) {
                     const vowels = 'aeiou';
                     const consonants = 'bcdfghjklmnpqrstvwxyz';
@@ -627,23 +608,18 @@
                     return name.charAt(0).toUpperCase() + name.slice(1);
                 },
 
-                // Insert random name
                 generateName() {
                     const firstName = this.generateRandomName(3 + Math.floor(Math.random() * 5));
                     const lastName = this.generateRandomName(3 + Math.floor(Math.random() * 7));
-                    const fullName = `${firstName} ${lastName}`;
-                    this.insertText(fullName);
+                    this.insertText(`${firstName} ${lastName}`);
                 },
 
-                // Insert random email
                 generateEmail() {
                     const firstName = this.generateRandomName(3 + Math.floor(Math.random() * 5)).toLowerCase();
                     const lastName = this.generateRandomName(3 + Math.floor(Math.random() * 7)).toLowerCase();
                     const randomNum = Math.floor(Math.random() * 1000);
                     const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'protonmail.com'];
-                    const domain = domains[Math.floor(Math.random() * domains.length)];
-                    const email = `${firstName}.${lastName}${randomNum}@${domain}`;
-                    this.insertText(email);
+                    this.insertText(`${firstName}.${lastName}${randomNum}@${domains[Math.floor(Math.random() * domains.length)]}`);
                 }
             };
 
