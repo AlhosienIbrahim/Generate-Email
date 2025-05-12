@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeKey: null,
         isTouchActive: false,
         hasInserted: false,
+        lastTouchTime: 0,
 
         init() {
             this.setLanguage(navigator.language.startsWith('ar') ? 'ar' : 'en');
@@ -18,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners() {
             // Touch events for mobile
             document.addEventListener('touchstart', (e) => {
+                const now = Date.now();
+                if (now - this.lastTouchTime < 100) return; // Debounce touch events
+                this.lastTouchTime = now;
+                
                 if (this.isTouchActive) return;
                 this.handleTouchStart(e);
             }, { passive: false });
@@ -134,15 +139,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.handleBackspaceEnd();
             });
 
-            // Regular keys
+            // Regular keys - modified to prevent duplicate events
             document.querySelectorAll('.key[data-char]:not(#backspaceKey)').forEach(key => {
+                // Remove click event listener to prevent duplicates
+                key.addEventListener('touchend', (e) => {
+                    if (this.activeKey === key && !this.hasInserted) {
+                        e.preventDefault();
+                        const char = this.currentLanguage === 'ar'
+                            ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
+                            : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
+                        this.insertText(char);
+                        this.hasInserted = true;
+                        this.inputField.focus();
+                    }
+                }, { passive: false });
+                
                 key.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const char = this.currentLanguage === 'ar'
-                        ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
-                        : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
-                    this.insertText(char);
-                    this.inputField.focus();
+                    // Only process click if not from touch event
+                    if (!('ontouchstart' in window) || !this.isTouchActive) {
+                        e.preventDefault();
+                        const char = this.currentLanguage === 'ar'
+                            ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
+                            : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
+                        this.insertText(char);
+                        this.inputField.focus();
+                    }
                 });
             });
         },
@@ -156,6 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (key && key.classList.contains('key') && key.dataset.char && key.id !== 'backspaceKey') {
                 this.activeKey = key;
                 key.classList.add('active');
+                e.preventDefault();
             } else {
                 this.isTouchActive = false;
             }
@@ -181,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.insertText(char);
                 this.hasInserted = true;
                 this.inputField.focus();
+                e.preventDefault();
             }
             if (this.activeKey) {
                 this.activeKey.classList.remove('active');
