@@ -17,12 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         setupEventListeners() {
-            // Touch events for mobile
+            // Touch events
             document.addEventListener('touchstart', (e) => {
                 const now = Date.now();
-                if (now - this.lastTouchTime < 200) return; // Increased debounce to 200ms
+                if (now - this.lastTouchTime < 200) return;
                 this.lastTouchTime = now;
-                
                 if (this.isTouchActive) return;
                 this.handleTouchStart(e);
             }, { passive: false });
@@ -39,8 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.handleTouchEnd();
             }, { passive: false });
 
-            // Mouse events for desktop fallback (only for non-touch devices)
-            if (!('ontouchstart' in window)) {
+            // Mouse events for non-touch devices
+            if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
                 document.addEventListener('mousedown', (e) => {
                     this.handleMouseDown(e);
                 });
@@ -75,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.inputField.focus();
             });
 
-            // Special keys
             document.getElementById('shiftKey').addEventListener('click', (e) => {
                 e.preventDefault();
                 this.toggleShift();
@@ -161,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const touch = e.touches[0];
                     const currentKey = document.elementFromPoint(touch.clientX, touch.clientY);
                     if (currentKey !== this.activeKey) {
-                        this.activeKey.classList.remove('active');
+                        if (this.activeKey) this.activeKey.classList.remove('active');
                         this.activeKey = null;
                         this.isTouchActive = false;
                         this.hasInserted = false;
@@ -171,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 key.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (this.activeKey === key && !this.hasInserted) {
+                    if (key.classList.contains('active') && !this.hasInserted) {
                         const char = this.currentLanguage === 'ar'
                             ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
                             : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
@@ -179,15 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.hasInserted = true;
                         this.inputField.focus();
                     }
-                    this.handleTouchEnd();
+                    this.handleTouchEnd(e);
                 }, { passive: false });
 
                 key.addEventListener('touchcancel', () => {
                     this.handleTouchEnd();
                 }, { passive: false });
 
-                // Mouse events only for non-touch devices
-                if (!('ontouchstart' in window)) {
+                if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
                     key.addEventListener('mousedown', (e) => {
                         e.preventDefault();
                         this.activeKey = key;
@@ -240,11 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
         handleTouchEnd(e) {
             if (this.activeKey) {
                 this.activeKey.classList.remove('active');
-                this.activeKey = null;
             }
             this.isTouchActive = false;
             this.hasInserted = false;
-            this.lastTouchTime = Date.now(); // Reset debounce timer
+            this.lastTouchTime = Date.now();
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -287,8 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         insertText(text) {
             const start = this.inputField.selectionStart;
             const end = this.inputField.selectionEnd;
-            this.inputField.value = this.inputField.value.substring(0, start) + text + 
-                                  this.inputField.value.substring(end);
+            this.inputField.value = this.inputField.value.substring(0, start) + text + this.inputField.value.substring(end);
             this.inputField.selectionStart = this.inputField.selectionEnd = start + text.length;
         },
 
@@ -300,12 +295,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (start === end) {
                 const text = this.inputField.value;
-                const charStart = start - 1;
-                this.inputField.value = text.substring(0, charStart) + text.substring(start);
-                this.inputField.selectionStart = this.inputField.selectionEnd = charStart;
+                this.inputField.value = text.substring(0, start - 1) + text.substring(start);
+                this.inputField.selectionStart = this.inputField.selectionEnd = start - 1;
             } else {
-                this.inputField.value = this.inputField.value.substring(0, start) + 
-                                   this.inputField.value.substring(end);
+                this.inputField.value = this.inputField.value.substring(0, start) + this.inputField.value.substring(end);
                 this.inputField.selectionStart = this.inputField.selectionEnd = start;
             }
         },
