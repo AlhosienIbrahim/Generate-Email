@@ -228,3 +228,7 @@ input {
     user-select: auto;
     touch-action: auto;
 }
+
+.hidden {
+    display: none;
+}
