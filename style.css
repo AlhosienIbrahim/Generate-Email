@@ -14,7 +14,7 @@
     --key-gap: 4px;
     --key-height: 48px;
     --special-key-bg: #CFD4DE;
-    --transition-duration: 0.1s;
+    --transition-duration: 0.05s;
     --font-size-base: 16px;
     --key-active-scale: 0.92;
 }
@@ -89,7 +89,7 @@ body {
     cursor: pointer;
     user-select: none;
     box-shadow: 0 1px 1px var(--key-shadow);
-    transition: all var(--transition-duration);
+    transition: transform var(--transition-duration) ease-out, background-color var(--transition-duration) ease-out;
     position: relative;
     flex: 1;
     padding: 0 4px;
@@ -105,6 +105,11 @@ body {
 .key.special {
     background-color: var(--special-key-bg);
     font-size: calc(var(--font-size-base) * 0.875);
+}
+
+#langKey {
+    min-width: 60px;
+    text-align: center;
 }
 
 .key.space {
@@ -189,18 +194,6 @@ body {
         --keyboard-radius: 6px;
         --font-size-base: 14px;
     }
-}
-
-.key {
-    will-change: transform;
-    transition: transform var(--transition-duration) ease-out, background-color var(--transition-duration) ease-out;
-    touch-action: manipulation;
-}
-
-.key:active {
-    background-color: var(--primary-light);
-    transform: scale(var(--key-active-scale));
-    transition: transform 0.05s ease-in-out, background-color 0.05s ease-in-out;
 }
 
 html,
