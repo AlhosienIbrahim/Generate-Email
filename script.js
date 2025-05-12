@@ -4,9 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isShiftActive: false,
         inputField: document.getElementById('testInput'),
         backspaceInterval: null,
-        pressedKeys: new Set(),
         activeKey: null,
-        lastTouchTime: 0,
+        touchStartTime: 0,
 
         init() {
             this.setLanguage(navigator.language.startsWith('ar') ? 'ar' : 'en');
@@ -15,31 +14,38 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         setupEventListeners() {
-            // Mouse events for desktop
-            document.addEventListener('mousedown', (e) => this.handleKeyPressStart(e));
-            document.addEventListener('mouseup', () => this.handleKeyPressEnd());
-            document.addEventListener('mouseleave', () => this.handleKeyPressEnd());
-            
             // Touch events for mobile
             document.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                this.lastTouchTime = Date.now();
-                this.handleKeyPressStart(e);
-            }, { passive: false });
-            
+                this.handleTouchStart(e);
+            }, { passive: true });
+
             document.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                this.handleKeyPressEnd();
-            }, { passive: false });
-            
-            // Click events for the generate buttons (works for both touch and mouse)
-            document.getElementById('generateTextKey').addEventListener('click', (e) => {
-                e.preventDefault();
+                this.handleTouchEnd(e);
+            }, { passive: true });
+
+            document.addEventListener('touchcancel', () => {
+                this.handleTouchEnd();
+            }, { passive: true });
+
+            // Mouse events for desktop fallback
+            document.addEventListener('mousedown', (e) => {
+                this.handleMouseDown(e);
+            });
+
+            document.addEventListener('mouseup', () => {
+                this.handleMouseUp();
+            });
+
+            document.addEventListener('mouseleave', () => {
+                this.handleMouseUp();
+            });
+
+            // Special buttons
+            document.getElementById('generateTextKey').addEventListener('click', () => {
                 this.generateName();
             });
-            
-            document.getElementById('generateEmailKey').addEventListener('click', (e) => {
-                e.preventDefault();
+
+            document.getElementById('generateEmailKey').addEventListener('click', () => {
                 this.generateEmail();
             });
 
@@ -48,23 +54,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('darkIcon').classList.toggle('hidden');
                 document.getElementById('lightIcon').classList.toggle('hidden');
             });
+
+            // Special keys
+            document.getElementById('shiftKey').addEventListener('click', () => {
+                this.toggleShift();
+            });
+
+            document.getElementById('langKey').addEventListener('click', () => {
+                this.toggleLanguage();
+            });
+
+            document.getElementById('spaceKey').addEventListener('click', () => {
+                this.insertText(' ');
+            });
+
+            document.getElementById('enterKey').addEventListener('click', () => {
+                this.insertText('\n');
+            });
         },
 
-        handleKeyPressStart(e) {
+        handleTouchStart(e) {
+            this.touchStartTime = Date.now();
+            const touch = e.touches[0];
+            const key = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (key && key.classList.contains('key')) {
+                this.activeKey = key;
+                key.classList.add('active');
+                this.handleKeyPress(key);
+            }
+        },
+
+        handleTouchEnd(e) {
+            if (this.activeKey) {
+                this.activeKey.classList.remove('active');
+                clearInterval(this.backspaceInterval);
+                
+                // Check if it's a long press (more than 300ms)
+                if (Date.now() - this.touchStartTime > 300 && 
+                    this.activeKey.id === 'backspaceKey') {
+                    clearInterval(this.backspaceInterval);
+                }
+                
+                this.activeKey = null;
+            }
+        },
+
+        handleMouseDown(e) {
             const key = e.target.closest('.key');
-            if (!key) return;
-            
-            this.activeKey = key;
-            key.classList.add('active');
-            
-            // Handle special keys immediately
+            if (key) {
+                this.activeKey = key;
+                key.classList.add('active');
+                this.handleKeyPress(key);
+            }
+        },
+
+        handleMouseUp() {
+            if (this.activeKey) {
+                this.activeKey.classList.remove('active');
+                clearInterval(this.backspaceInterval);
+                this.activeKey = null;
+            }
+        },
+
+        handleKeyPress(key) {
             if (key.id === 'backspaceKey') {
                 this.backspace();
                 this.backspaceInterval = setInterval(() => this.backspace(), 100);
-            } else if (key.id === 'generateTextKey') {
-                this.generateName();
-            } else if (key.id === 'generateEmailKey') {
-                this.generateEmail();
             } else if (key.dataset.char) {
                 const char = this.currentLanguage === 'ar'
                     ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
@@ -73,15 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        handleKeyPressEnd() {
-            if (this.activeKey) {
-                this.activeKey.classList.remove('active');
-                clearInterval(this.backspaceInterval);
-                this.activeKey = null;
-            }
-        },
-
-        // باقي الدوال تبقى كما هي بدون تغيير...
         insertText(text) {
             const start = this.inputField.selectionStart;
             const end = this.inputField.selectionEnd;
