@@ -17,11 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         setupEventListeners() {
-            // Touch events
+            // Touch events for mobile
             document.addEventListener('touchstart', (e) => {
                 const now = Date.now();
-                if (now - this.lastTouchTime < 200) return;
+                if (now - this.lastTouchTime < 100) return; // Debounce touch events
                 this.lastTouchTime = now;
+
                 if (this.isTouchActive) return;
                 this.handleTouchStart(e);
             }, { passive: false });
@@ -38,20 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.handleTouchEnd();
             }, { passive: false });
 
-            // Mouse events for non-touch devices
-            if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
-                document.addEventListener('mousedown', (e) => {
-                    this.handleMouseDown(e);
-                });
+            // Mouse events for desktop fallback
+            document.addEventListener('mousedown', (e) => {
+                this.handleMouseDown(e);
+            });
 
-                document.addEventListener('mouseup', () => {
-                    this.handleMouseUp();
-                });
+            document.addEventListener('mouseup', () => {
+                this.handleMouseUp();
+            });
 
-                document.addEventListener('mouseleave', () => {
-                    this.handleMouseUp();
-                });
-            }
+            document.addEventListener('mouseleave', () => {
+                this.handleMouseUp();
+            });
 
             // Special buttons
             document.getElementById('generateTextKey').addEventListener('click', (e) => {
@@ -74,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.inputField.focus();
             });
 
+            // Special keys
             document.getElementById('shiftKey').addEventListener('click', (e) => {
                 e.preventDefault();
                 this.toggleShift();
@@ -102,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const backspaceKey = document.getElementById('backspaceKey');
             backspaceKey.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 if (!this.isTouchActive) {
                     this.isTouchActive = true;
                     this.activeKey = backspaceKey;
@@ -114,9 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, { passive: false });
 
-            backspaceKey.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            backspaceKey.addEventListener('touchend', () => {
                 this.handleBackspaceEnd();
             }, { passive: false });
 
@@ -142,34 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.handleBackspaceEnd();
             });
 
-            // Regular keys
+            // Regular keys - modified to prevent duplicate events
             document.querySelectorAll('.key[data-char]:not(#backspaceKey)').forEach(key => {
-                key.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (this.isTouchActive) return;
-                    this.isTouchActive = true;
-                    this.hasInserted = false;
-                    this.activeKey = key;
-                    key.classList.add('active');
-                }, { passive: false });
-
-                key.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    const touch = e.touches[0];
-                    const currentKey = document.elementFromPoint(touch.clientX, touch.clientY);
-                    if (currentKey !== this.activeKey) {
-                        if (this.activeKey) this.activeKey.classList.remove('active');
-                        this.activeKey = null;
-                        this.isTouchActive = false;
-                        this.hasInserted = false;
-                    }
-                }, { passive: false });
-
+                // Remove click event listener to prevent duplicates
                 key.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (key.classList.contains('active') && !this.hasInserted) {
+                    if (this.activeKey === key && !this.hasInserted) {
+                        e.preventDefault();
                         const char = this.currentLanguage === 'ar'
                             ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
                             : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
@@ -177,32 +152,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.hasInserted = true;
                         this.inputField.focus();
                     }
-                    this.handleTouchEnd(e);
                 }, { passive: false });
 
-                key.addEventListener('touchcancel', () => {
-                    this.handleTouchEnd();
-                }, { passive: false });
-
-                if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
-                    key.addEventListener('mousedown', (e) => {
+                key.addEventListener('click', (e) => {
+                    // Only process click if not from touch event
+                    if (!('ontouchstart' in window) || !this.isTouchActive) {
                         e.preventDefault();
-                        this.activeKey = key;
-                        key.classList.add('active');
-                    });
-
-                    key.addEventListener('mouseup', () => {
-                        if (this.activeKey) {
-                            const char = this.currentLanguage === 'ar'
-                                ? this.isShiftActive ? (this.activeKey.dataset.arSecondary || this.activeKey.dataset.ar) : this.activeKey.dataset.ar
-                                : this.isShiftActive ? (this.activeKey.dataset.secondary || this.activeKey.dataset.char) : this.activeKey.dataset.char;
-                            this.insertText(char);
-                            this.inputField.focus();
-                            this.activeKey.classList.remove('active');
-                            this.activeKey = null;
-                        }
-                    });
-                }
+                        const char = this.currentLanguage === 'ar'
+                            ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
+                            : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
+                        this.insertText(char);
+                        this.inputField.focus();
+                    }
+                });
             });
         },
 
@@ -216,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.activeKey = key;
                 key.classList.add('active');
                 e.preventDefault();
-                e.stopPropagation();
             } else {
                 this.isTouchActive = false;
             }
@@ -235,16 +196,21 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         handleTouchEnd(e) {
+            if (this.activeKey && this.activeKey.dataset.char && this.activeKey.id !== 'backspaceKey' && !this.hasInserted) {
+                const char = this.currentLanguage === 'ar'
+                    ? this.isShiftActive ? (this.activeKey.dataset.arSecondary || this.activeKey.dataset.ar) : this.activeKey.dataset.ar
+                    : this.isShiftActive ? (this.activeKey.dataset.secondary || this.activeKey.dataset.char) : this.activeKey.dataset.char;
+                this.insertText(char);
+                this.hasInserted = true;
+                this.inputField.focus();
+                e.preventDefault();
+            }
             if (this.activeKey) {
                 this.activeKey.classList.remove('active');
+                this.activeKey = null;
             }
             this.isTouchActive = false;
             this.hasInserted = false;
-            this.lastTouchTime = Date.now();
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
         },
 
         handleMouseDown(e) {
@@ -283,7 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
         insertText(text) {
             const start = this.inputField.selectionStart;
             const end = this.inputField.selectionEnd;
-            this.inputField.value = this.inputField.value.substring(0, start) + text + this.inputField.value.substring(end);
+            this.inputField.value = this.inputField.value.substring(0, start) + text +
+                this.inputField.value.substring(end);
             this.inputField.selectionStart = this.inputField.selectionEnd = start + text.length;
         },
 
@@ -295,10 +262,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (start === end) {
                 const text = this.inputField.value;
-                this.inputField.value = text.substring(0, start - 1) + text.substring(start);
-                this.inputField.selectionStart = this.inputField.selectionEnd = start - 1;
+                const charStart = start - 1;
+                this.inputField.value = text.substring(0, charStart) + text.substring(start);
+                this.inputField.selectionStart = this.inputField.selectionEnd = charStart;
             } else {
-                this.inputField.value = this.inputField.value.substring(0, start) + this.inputField.value.substring(end);
+                this.inputField.value = this.inputField.value.substring(0, start) +
+                    this.inputField.value.substring(end);
                 this.inputField.selectionStart = this.inputField.selectionEnd = start;
             }
         },
