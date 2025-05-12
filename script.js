@@ -3,9 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentLanguage: 'en',
         isShiftActive: false,
         inputField: document.getElementById('testInput'),
+        backspaceTimeout: null,
         backspaceInterval: null,
         activeKey: null,
-        touchStartTime: 0,
+        isTouchActive: false,
+        hasInserted: false,
 
         init() {
             this.setLanguage(navigator.language.startsWith('ar') ? 'ar' : 'en');
@@ -16,16 +18,21 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners() {
             // Touch events for mobile
             document.addEventListener('touchstart', (e) => {
+                if (this.isTouchActive) return;
                 this.handleTouchStart(e);
-            }, { passive: true });
+            }, { passive: false });
+
+            document.addEventListener('touchmove', (e) => {
+                this.handleTouchMove(e);
+            }, { passive: false });
 
             document.addEventListener('touchend', (e) => {
                 this.handleTouchEnd(e);
-            }, { passive: true });
+            }, { passive: false });
 
             document.addEventListener('touchcancel', () => {
                 this.handleTouchEnd();
-            }, { passive: true });
+            }, { passive: false });
 
             // Mouse events for desktop fallback
             document.addEventListener('mousedown', (e) => {
@@ -41,91 +48,179 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Special buttons
-            document.getElementById('generateTextKey').addEventListener('click', () => {
+            document.getElementById('generateTextKey').addEventListener('click', (e) => {
+                e.preventDefault();
                 this.generateName();
+                this.inputField.focus();
             });
 
-            document.getElementById('generateEmailKey').addEventListener('click', () => {
+            document.getElementById('generateEmailKey').addEventListener('click', (e) => {
+                e.preventDefault();
                 this.generateEmail();
+                this.inputField.focus();
             });
 
-            document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.getElementById('darkModeToggle').addEventListener('click', (e) => {
+                e.preventDefault();
                 document.body.classList.toggle('dark-mode');
                 document.getElementById('darkIcon').classList.toggle('hidden');
                 document.getElementById('lightIcon').classList.toggle('hidden');
+                this.inputField.focus();
             });
 
             // Special keys
-            document.getElementById('shiftKey').addEventListener('click', () => {
+            document.getElementById('shiftKey').addEventListener('click', (e) => {
+                e.preventDefault();
                 this.toggleShift();
+                this.inputField.focus();
             });
 
-            document.getElementById('langKey').addEventListener('click', () => {
+            document.getElementById('langKey').addEventListener('click', (e) => {
+                e.preventDefault();
                 this.toggleLanguage();
+                this.inputField.focus();
             });
 
-            document.getElementById('spaceKey').addEventListener('click', () => {
+            document.getElementById('spaceKey').addEventListener('click', (e) => {
+                e.preventDefault();
                 this.insertText(' ');
+                this.inputField.focus();
             });
 
-            document.getElementById('enterKey').addEventListener('click', () => {
+            document.getElementById('enterKey').addEventListener('click', (e) => {
+                e.preventDefault();
                 this.insertText('\n');
+                this.inputField.focus();
+            });
+
+            // Backspace key
+            const backspaceKey = document.getElementById('backspaceKey');
+            backspaceKey.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!this.isTouchActive) {
+                    this.isTouchActive = true;
+                    this.activeKey = backspaceKey;
+                    backspaceKey.classList.add('active');
+                    this.backspace();
+                    this.backspaceTimeout = setTimeout(() => {
+                        this.backspaceInterval = setInterval(() => this.backspace(), 100);
+                    }, 300);
+                }
+            }, { passive: false });
+
+            backspaceKey.addEventListener('touchend', () => {
+                this.handleBackspaceEnd();
+            }, { passive: false });
+
+            backspaceKey.addEventListener('touchcancel', () => {
+                this.handleBackspaceEnd();
+            }, { passive: false });
+
+            backspaceKey.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.activeKey = backspaceKey;
+                backspaceKey.classList.add('active');
+                this.backspace();
+                this.backspaceTimeout = setTimeout(() => {
+                    this.backspaceInterval = setInterval(() => this.backspace(), 100);
+                }, 300);
+            });
+
+            backspaceKey.addEventListener('mouseup', () => {
+                this.handleBackspaceEnd();
+            });
+
+            backspaceKey.addEventListener('mouseleave', () => {
+                this.handleBackspaceEnd();
+            });
+
+            // Regular keys
+            document.querySelectorAll('.key[data-char]:not(#backspaceKey)').forEach(key => {
+                key.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const char = this.currentLanguage === 'ar'
+                        ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
+                        : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
+                    this.insertText(char);
+                    this.inputField.focus();
+                });
             });
         },
 
         handleTouchStart(e) {
-            this.touchStartTime = Date.now();
+            if (this.isTouchActive) return;
+            this.isTouchActive = true;
+            this.hasInserted = false;
             const touch = e.touches[0];
             const key = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (key && key.classList.contains('key')) {
+            if (key && key.classList.contains('key') && key.dataset.char && key.id !== 'backspaceKey') {
                 this.activeKey = key;
                 key.classList.add('active');
-                this.handleKeyPress(key);
+            } else {
+                this.isTouchActive = false;
+            }
+        },
+
+        handleTouchMove(e) {
+            if (!this.activeKey) return;
+            const touch = e.touches[0];
+            const currentKey = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (currentKey !== this.activeKey) {
+                this.activeKey.classList.remove('active');
+                this.activeKey = null;
+                this.isTouchActive = false;
+                this.hasInserted = false;
             }
         },
 
         handleTouchEnd(e) {
+            if (this.activeKey && this.activeKey.dataset.char && this.activeKey.id !== 'backspaceKey' && !this.hasInserted) {
+                const char = this.currentLanguage === 'ar'
+                    ? this.isShiftActive ? (this.activeKey.dataset.arSecondary || this.activeKey.dataset.ar) : this.activeKey.dataset.ar
+                    : this.isShiftActive ? (this.activeKey.dataset.secondary || this.activeKey.dataset.char) : this.activeKey.dataset.char;
+                this.insertText(char);
+                this.hasInserted = true;
+                this.inputField.focus();
+            }
             if (this.activeKey) {
                 this.activeKey.classList.remove('active');
-                clearInterval(this.backspaceInterval);
-                
-                // Check if it's a long press (more than 300ms)
-                if (Date.now() - this.touchStartTime > 300 && 
-                    this.activeKey.id === 'backspaceKey') {
-                    clearInterval(this.backspaceInterval);
-                }
-                
                 this.activeKey = null;
             }
+            this.isTouchActive = false;
+            this.hasInserted = false;
         },
 
         handleMouseDown(e) {
             const key = e.target.closest('.key');
-            if (key) {
+            if (key && key.dataset.char && key.id !== 'backspaceKey') {
                 this.activeKey = key;
                 key.classList.add('active');
-                this.handleKeyPress(key);
             }
         },
 
         handleMouseUp() {
+            if (this.activeKey && this.activeKey.dataset.char && this.activeKey.id !== 'backspaceKey') {
+                const char = this.currentLanguage === 'ar'
+                    ? this.isShiftActive ? (this.activeKey.dataset.arSecondary || this.activeKey.dataset.ar) : this.activeKey.dataset.ar
+                    : this.isShiftActive ? (this.activeKey.dataset.secondary || this.activeKey.dataset.char) : this.activeKey.dataset.char;
+                this.insertText(char);
+                this.inputField.focus();
+            }
             if (this.activeKey) {
                 this.activeKey.classList.remove('active');
-                clearInterval(this.backspaceInterval);
                 this.activeKey = null;
             }
         },
 
-        handleKeyPress(key) {
-            if (key.id === 'backspaceKey') {
-                this.backspace();
-                this.backspaceInterval = setInterval(() => this.backspace(), 100);
-            } else if (key.dataset.char) {
-                const char = this.currentLanguage === 'ar'
-                    ? this.isShiftActive ? (key.dataset.arSecondary || key.dataset.ar) : key.dataset.ar
-                    : this.isShiftActive ? (key.dataset.secondary || key.dataset.char) : key.dataset.char;
-                this.insertText(char);
+        handleBackspaceEnd() {
+            if (this.activeKey) {
+                this.activeKey.classList.remove('active');
+                this.activeKey = null;
             }
+            clearTimeout(this.backspaceTimeout);
+            clearInterval(this.backspaceInterval);
+            this.isTouchActive = false;
+            this.inputField.focus();
         },
 
         insertText(text) {
@@ -134,25 +229,24 @@ document.addEventListener('DOMContentLoaded', () => {
             this.inputField.value = this.inputField.value.substring(0, start) + text + 
                                   this.inputField.value.substring(end);
             this.inputField.selectionStart = this.inputField.selectionEnd = start + text.length;
-            this.inputField.focus();
         },
 
         backspace() {
             const start = this.inputField.selectionStart;
             const end = this.inputField.selectionEnd;
-            
+
             if (start === 0 && start === end) return;
-            
+
             if (start === end) {
-                this.inputField.value = this.inputField.value.substring(0, start - 1) + 
-                                    this.inputField.value.substring(start);
-                this.inputField.selectionStart = this.inputField.selectionEnd = start - 1;
+                const text = this.inputField.value;
+                const charStart = start - 1;
+                this.inputField.value = text.substring(0, charStart) + text.substring(start);
+                this.inputField.selectionStart = this.inputField.selectionEnd = charStart;
             } else {
                 this.inputField.value = this.inputField.value.substring(0, start) + 
-                                    this.inputField.value.substring(end);
+                                   this.inputField.value.substring(end);
                 this.inputField.selectionStart = this.inputField.selectionEnd = start;
             }
-            this.inputField.focus();
         },
 
         toggleShift() {
@@ -167,7 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLanguage(lang) {
             this.currentLanguage = lang;
-            document.getElementById('langKey').textContent = lang === 'en' ? 'عربي' : 'English';
+            const langKey = document.getElementById('langKey');
+            langKey.textContent = lang === 'en' ? 'عربي' : 'English';
+            langKey.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
             this.updateKeyLabels();
         },
 
